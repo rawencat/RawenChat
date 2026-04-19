@@ -1,0 +1,61 @@
+// Configuración simple para Electron
+
+export const WINDOW_CONFIG = {
+  WIDTH: 1280,
+  HEIGHT: 800,
+  MIN_WIDTH: 800,
+  MIN_HEIGHT: 600,
+  TITLE: "RawenChat",
+} as const;
+
+export const DEV_URL = "http://localhost:3000";
+
+// Mapeo de teclas para Windows (WScript.SendKeys)
+export const WIN_KEYS: Record<string, string> = {
+  space: " ",
+  enter: "{ENTER}",
+  escape: "{ESC}",
+  backspace: "{BACKSPACE}",
+  tab: "{TAB}",
+  up: "{UP}",
+  down: "{DOWN}",
+  left: "{LEFT}",
+  right: "{RIGHT}",
+  f1: "{F1}",
+  f2: "{F2}",
+  f3: "{F3}",
+  f4: "{F4}",
+  f5: "{F5}",
+  f6: "{F6}",
+  f7: "{F7}",
+  f8: "{F8}",
+  f9: "{F9}",
+  f10: "{F10}",
+  f11: "{F11}",
+  f12: "{F12}",
+};
+
+// Mapeo de teclas para macOS (key codes)
+export const MAC_KEYS: Record<string, number> = {
+  space: 49,
+  enter: 36,
+  escape: 53,
+  backspace: 51,
+  tab: 48,
+  up: 126,
+  down: 125,
+  left: 123,
+  right: 124,
+  f1: 122,
+  f2: 120,
+  f3: 99,
+  f4: 118,
+  f5: 96,
+  f6: 97,
+  f7: 98,
+  f8: 100,
+  f9: 101,
+  f10: 109,
+  f11: 103,
+  f12: 111,
+};

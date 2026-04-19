@@ -1,0 +1,70 @@
+{
+  "name": "twitch-rawen",
+  "version": "0.1.0",
+  "private": true,
+  "main": "electron-dist/main.js",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "electron:watch": "tsc -p electron/tsconfig.json --watch",
+    "electron:dev": "concurrently \"tsc -p electron/tsconfig.json --watch\" \"next dev --turbopack\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:compile": "tsc -p electron/tsconfig.json",
+    "electron:build": "next build && tsc -p electron/tsconfig.json && electron-builder",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "build": {
+    "appId": "com.rawenchat.app",
+    "productName": "RawenChat",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron-dist/**/*",
+      "out/**/*",
+      "public/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "icon": "public/logon",
+    "win": {
+      "target": "nsis",
+      "icon": "public/logon"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/logon"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/logon"
+    }
+  },
+  "dependencies": {
+    "@andresaya/edge-tts": "^1.8.0",
+    "@fluentui/react-icons": "^2.0.324",
+    "@lobehub/fluent-emoji": "^2.0.0",
+    "@sapphire/ratelimits": "^2.4.11",
+    "next": "16.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tmi.js": "^1.8.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/tmi.js": "^1.8.6",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^31.6.0",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.4",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "wait-on": "^8.0.3"
+  }
+}
