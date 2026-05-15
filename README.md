@@ -3,7 +3,7 @@
 
 App ligera para leer el chat de tu canal de Twitch y ejecutar comandos desde el chat.
 
-![RawenChat](public/banner.png)
+[![Download / Descargar](https://img.shields.io/badge/Download-Descargar-blue?style=for-the-badge)](https://github.com/RevenzMind/RawenChat/releases/latest)
 
 ## Resumen rápido
 
