@@ -4,35 +4,14 @@ import { useEffect, Suspense } from "react";
 import * as tmi from "tmi.js";
 import { useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { getKickChatroomId, getKickWebSocketUrl } from "@/utils/kick";
+import { getPlatformDisplayName, type ChatPlatform } from "@/utils/platform";
 
 interface MessageProps {
   timestamp: string;
   username: string | undefined;
   message: string;
   color?: string | undefined;
-}
-
-type ChatPlatform = "twitch" | "kick";
-
-interface KickChannelResponse {
-  chatroom?: {
-    id?: number | string;
-  };
-}
-
-const KICK_PUSHER_KEY = "32cbd69e4b950bf97679";
-
-async function getKickChatroomId(channelName: string): Promise<string> {
-  const response = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(channelName)}`);
-  if (!response.ok) {
-    throw new Error(`Kick channel lookup failed (${response.status})`);
-  }
-  const data = (await response.json()) as KickChannelResponse;
-  const chatroomId = data.chatroom?.id;
-  if (!chatroomId) {
-    throw new Error("Kick chatroom not found for this channel");
-  }
-  return String(chatroomId);
 }
 
 function ObsPageContent() {
@@ -76,14 +55,14 @@ function ObsPageContent() {
       getKickChatroomId(channel)
         .then((chatroomId) => {
           if (!active) return;
-          ws = new WebSocket(`wss://ws-us2.pusher.com/app/${KICK_PUSHER_KEY}?protocol=7&client=js&version=7.6.0&flash=false`);
+          ws = new WebSocket(getKickWebSocketUrl());
 
           ws.onopen = () => {
             ws?.send(
               JSON.stringify({
                 event: "pusher:subscribe",
                 data: {
-                  auth: "",
+                  auth: "", // Public chatrooms do not require signed auth tokens.
                   channel: `chatrooms.${chatroomId}.v2`,
                 },
               })
@@ -109,7 +88,7 @@ function ObsPageContent() {
 
               SetMessages((prevMessages) => [...prevMessages, newMessage]);
             } catch (err) {
-              console.error("Kick message parse error:", err);
+              console.error("Failed to parse Kick WebSocket message:", err);
             }
           };
         })
@@ -174,7 +153,7 @@ function ObsPageContent() {
       ) : (
         <div className="flex items-center justify-center h-full">
           <p className="text-gray-500 text-sm">
-            {channel ? `Esperando mensajes en ${platform === "kick" ? "Kick" : "Twitch"}: ${channel}...` : "Esperando..."}
+            {channel ? `Esperando mensajes en ${getPlatformDisplayName(platform)}: ${channel}...` : "Esperando..."}
           </p>
         </div>
       )}

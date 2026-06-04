@@ -1,10 +1,11 @@
 "use client";
 import { RefObject } from "react";
 import { Chat20Regular, Settings20Filled, SignOut20Regular, Stop20Filled } from "@fluentui/react-icons";
+import { type ChatPlatform } from "@/utils/platform";
 
 interface SidebarProps {
   channel: string;
-  platform?: "twitch" | "kick";
+  platform?: ChatPlatform;
   activeTab: "chat" | "commands";
   setActiveTab: (tab: "chat" | "commands") => void;
   barPosition: number;
@@ -131,6 +132,5 @@ export default function Sidebar({
     </aside>
   );
 }
-
 
 

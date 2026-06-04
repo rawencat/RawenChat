@@ -16,6 +16,8 @@ import Footer from "./components/footer";
 import { STORAGE_KEYS, DEFAULTS } from "@/constants/config";
 import { getRandomColor } from "@/constants/colors";
 import { speakMessage, getAvailableVoices } from "@/utils/tts";
+import { getKickChatroomId, getKickWebSocketUrl } from "@/utils/kick";
+import { getPlatformDisplayName, type ChatPlatform } from "@/utils/platform";
 import { getFromStorage, saveToStorage } from "@/utils/storage";
 
 import type { Command } from "./components/sidebar/CommandsPanel";
@@ -28,34 +30,11 @@ interface MessageProps {
 }
 
 type SidebarTab = "chat" | "commands";
-type ChatPlatform = "twitch" | "kick";
 
 interface IncomingChatMessage {
   username?: string;
-  userId?: string;
   message: string;
   color?: string;
-}
-
-interface KickChannelResponse {
-  chatroom?: {
-    id?: number | string;
-  };
-}
-
-const KICK_PUSHER_KEY = "32cbd69e4b950bf97679";
-
-async function getKickChatroomId(channelName: string): Promise<string> {
-  const response = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(channelName)}`);
-  if (!response.ok) {
-    throw new Error(`Kick channel lookup failed (${response.status})`);
-  }
-  const data = (await response.json()) as KickChannelResponse;
-  const chatroomId = data.chatroom?.id;
-  if (!chatroomId) {
-    throw new Error("Kick chatroom not found for this channel");
-  }
-  return String(chatroomId);
 }
 
 function loadCommands(): Command[] {
@@ -235,6 +214,7 @@ export default function Home() {
 
   const handleIncomingMessage = useCallback((incoming: IncomingChatMessage) => {
     const username = incoming.username || "Anónimo";
+    const normalizedUsername = username.toLowerCase();
     const newMessage: MessageProps = {
       timestamp: new Date().toISOString(),
       username,
@@ -259,7 +239,7 @@ export default function Home() {
       rateLimitersRef.current.set(command.trigger, limiter);
     }
 
-    const limitKey = command.rateLimitType === "global" ? "global" : (incoming.userId || username || "anonymous");
+    const limitKey = command.rateLimitType === "global" ? "global" : normalizedUsername;
     const rateLimit = limiter.acquire(limitKey);
     if (rateLimit.limited) return;
     rateLimit.consume();
@@ -315,7 +295,6 @@ export default function Home() {
       client.on("message", (_ch, tags, message) => {
         handleIncomingMessage({
           username: tags.username || undefined,
-          userId: (tags["user-id"] as string | undefined) || tags.username || undefined,
           message,
           color: tags.color || undefined,
         });
@@ -332,14 +311,14 @@ export default function Home() {
       getKickChatroomId(channel)
         .then((chatroomId) => {
           if (!isActive) return;
-          ws = new WebSocket(`wss://ws-us2.pusher.com/app/${KICK_PUSHER_KEY}?protocol=7&client=js&version=7.6.0&flash=false`);
+          ws = new WebSocket(getKickWebSocketUrl());
 
           ws.onopen = () => {
             ws?.send(
               JSON.stringify({
                 event: "pusher:subscribe",
                 data: {
-                  auth: "",
+                  auth: "", // Public chatrooms do not require signed auth tokens.
                   channel: `chatrooms.${chatroomId}.v2`,
                 },
               })
@@ -362,11 +341,10 @@ export default function Home() {
 
               handleIncomingMessage({
                 username: data.sender?.username || data.sender?.slug || "kick_user",
-                userId: data.sender?.id ? String(data.sender.id) : undefined,
                 message: data.content,
               });
             } catch (err) {
-              console.error("Kick message parse error:", err);
+              console.error("Failed to parse Kick WebSocket message:", err);
             }
           };
 
@@ -480,7 +458,7 @@ export default function Home() {
           {!channel ? (
             <div className="flex items-center justify-center flex-1 p-8">
               <div className="bg-[#18181b] border border-[#3f3f46] rounded-lg p-8 w-full max-w-md shadow-lg">
-                <h2 className="text-2xl font-bold text-white mb-2">Conectar a {platform === "kick" ? "Kick" : "Twitch"}</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">Conectar a {getPlatformDisplayName(platform)}</h2>
                 <p className="text-gray-400 mb-6 text-sm">
                   Selecciona plataforma e ingresa el nombre de tu canal para comenzar
                 </p>
@@ -598,6 +576,3 @@ export default function Home() {
     </main>
   );
 }
-
-
-

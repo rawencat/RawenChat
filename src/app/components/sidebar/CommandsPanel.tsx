@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Keyboard20Filled, Joystick20Filled, Speaker020Regular } from "@fluentui/react-icons";
 import { isValidKey } from "@/constants/validation";
 import { DEFAULTS } from "@/constants/config";
+import { getPlatformDisplayName, type ChatPlatform } from "@/utils/platform";
 
 export interface Command {
   id: string;
@@ -19,7 +20,7 @@ interface CommandsPanelProps {
   commands: Command[];
   setCommands: (commands: Command[]) => void;
   isLocked?: boolean;
-  platform?: "twitch" | "kick";
+  platform?: ChatPlatform;
 }
 
 const EMPTY_COMMAND: Omit<Command, "id"> = { 
@@ -178,7 +179,7 @@ export default function CommandsPanel({
       <p className="text-gray-400 text-sm">
         {isLocked
           ? "Presiona 'Conectar' para desbloquear y crear comandos."
-          : `Cuando alguien escriba el comando en el chat de ${platform === "kick" ? "Kick" : "Twitch"}, RawenChat ejecutará la acción automáticamente.`}
+          : `Cuando alguien escriba el comando en el chat de ${getPlatformDisplayName(platform)}, RawenChat ejecutará la acción automáticamente.`}
       </p>
 
       {/* Command list */}
@@ -416,4 +417,3 @@ export default function CommandsPanel({
     </div>
   );
 }
-
