@@ -19,6 +19,7 @@ interface CommandsPanelProps {
   commands: Command[];
   setCommands: (commands: Command[]) => void;
   isLocked?: boolean;
+  platform?: "twitch" | "kick";
 }
 
 const EMPTY_COMMAND: Omit<Command, "id"> = { 
@@ -35,6 +36,7 @@ export default function CommandsPanel({
   commands,
   setCommands,
   isLocked = false,
+  platform = "twitch",
 }: CommandsPanelProps) {
   const [editing, setEditing] = useState<Command | null>(null);
   const [form, setForm] = useState<Omit<Command, "id">>(EMPTY_COMMAND);
@@ -176,7 +178,7 @@ export default function CommandsPanel({
       <p className="text-gray-400 text-sm">
         {isLocked
           ? "Presiona 'Conectar' para desbloquear y crear comandos."
-          : "Cuando alguien escriba el comando en el chat de Twitch, RawenChat presionará la tecla automáticamente."}
+          : `Cuando alguien escriba el comando en el chat de ${platform === "kick" ? "Kick" : "Twitch"}, RawenChat ejecutará la acción automáticamente.`}
       </p>
 
       {/* Command list */}
@@ -414,5 +416,4 @@ export default function CommandsPanel({
     </div>
   );
 }
-
 

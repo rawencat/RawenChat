@@ -28,6 +28,35 @@ interface MessageProps {
 }
 
 type SidebarTab = "chat" | "commands";
+type ChatPlatform = "twitch" | "kick";
+
+interface IncomingChatMessage {
+  username?: string;
+  userId?: string;
+  message: string;
+  color?: string;
+}
+
+interface KickChannelResponse {
+  chatroom?: {
+    id?: number | string;
+  };
+}
+
+const KICK_PUSHER_KEY = "32cbd69e4b950bf97679";
+
+async function getKickChatroomId(channelName: string): Promise<string> {
+  const response = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(channelName)}`);
+  if (!response.ok) {
+    throw new Error(`Kick channel lookup failed (${response.status})`);
+  }
+  const data = (await response.json()) as KickChannelResponse;
+  const chatroomId = data.chatroom?.id;
+  if (!chatroomId) {
+    throw new Error("Kick chatroom not found for this channel");
+  }
+  return String(chatroomId);
+}
 
 function loadCommands(): Command[] {
   return getFromStorage<Command[]>(STORAGE_KEYS.COMMANDS) || [];
@@ -45,6 +74,7 @@ function loadTTSConfig() {
 export default function Home() {
   const [channelInput, setChannelInput] = useState<string>("");
   const [channel, setChannel] = useState<string>("");
+  const [platform, setPlatform] = useState<ChatPlatform>("twitch");
   const InputUser = useRef<HTMLInputElement>(null);
 
   const [IsConnected, SetConnect] = useState(false);
@@ -75,8 +105,7 @@ export default function Home() {
   const [barPosition, setBarPosition] = useState(0);
   const navRef = useRef<HTMLDivElement>(null);
   const rateLimitersRef = useRef<Map<string, RateLimitManager<string>>>(new Map());
-
-  const tmiClientRef = useRef<tmi.Client | null>(null);
+  const disconnectRef = useRef<(() => void) | null>(null);
 
   function setCommands(updated: Command[]) {
     setCommandsState(updated);
@@ -203,86 +232,166 @@ export default function Home() {
       });
     }
   }, [Messages, autoScroll]);
+
+  const handleIncomingMessage = useCallback((incoming: IncomingChatMessage) => {
+    const username = incoming.username || "Anónimo";
+    const newMessage: MessageProps = {
+      timestamp: new Date().toISOString(),
+      username,
+      message: incoming.message,
+      color: incoming.color || getRandomColor(),
+    };
+
+    SetMessages((prevMessages) => [...prevMessages, newMessage]);
+
+    if (ttsRef.current) {
+      ttsQueueRef.current.push(`${username} dice: ${incoming.message}`);
+      processTTSQueue();
+    }
+
+    const lower = incoming.message.trim().toLowerCase();
+    const command = commandsRef.current.find((cmd) => cmd.trigger === lower);
+    if (!command || typeof window === "undefined") return;
+
+    let limiter = rateLimitersRef.current.get(command.trigger);
+    if (!limiter) {
+      limiter = new RateLimitManager(command.timeout || DEFAULTS.COMMAND_TIMEOUT_MS, 1);
+      rateLimitersRef.current.set(command.trigger, limiter);
+    }
+
+    const limitKey = command.rateLimitType === "global" ? "global" : (incoming.userId || username || "anonymous");
+    const rateLimit = limiter.acquire(limitKey);
+    if (rateLimit.limited) return;
+    rateLimit.consume();
+
+    const actionType = command.actionType || "key";
+
+    if ((actionType === "key" || actionType === "both") && window.electron) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      window.electron.pressKey(command.key).catch((err: any) => console.error("❌ Error:", err));
+    }
+
+    if ((actionType === "sound" || actionType === "both") && command.soundFile) {
+      try {
+        const audio = new Audio(command.soundFile.startsWith("data:") ? command.soundFile : `/${command.soundFile}`);
+        audio.volume = 1;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        audio.play().catch((err: any) => console.error("❌ Error:", err));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        console.error("❌ Error:", err);
+      }
+    }
+  }, [processTTSQueue]);
+
   useEffect(() => {
     if (!channel) return;
 
-    const client = new tmi.Client({
-      channels: [channel.toLowerCase()],
-    });
+    SetConnect(false);
+    SetMessages([]);
+    rateLimitersRef.current.clear();
 
-    tmiClientRef.current = client;
-
-    client
-      .connect()
-      .then(() => {
-        SetConnect(true);
-      })
-      .catch((err) => {
-        console.error("Failed to connect:", err);
-        SetConnect(false);
+    if (platform === "twitch") {
+      const client = new tmi.Client({
+        channels: [channel.toLowerCase()],
       });
 
-    client.on("message", (_ch, tags, message) => {
-      const newMessage: MessageProps = {
-        timestamp: new Date().toISOString(),
-        username: tags.username,
-        message: message,
-        color: tags.color || getRandomColor(),
-      };
-      SetMessages((prevMessages) => [...prevMessages, newMessage]);
-      if (ttsRef.current) {
-        ttsQueueRef.current.push(`${tags.username} dice: ${message}`);
-        processTTSQueue();
-      }
-
-      //  comandos
-      const lower = message.trim().toLowerCase();
-      const command = commandsRef.current.find(cmd => cmd.trigger === lower);
-      if (!command || typeof window === "undefined") return;
-
-      // Verificar rate limit
-      let limiter = rateLimitersRef.current.get(command.trigger);
-      if (!limiter) {
-        limiter = new RateLimitManager(command.timeout || DEFAULTS.COMMAND_TIMEOUT_MS, 1);
-        rateLimitersRef.current.set(command.trigger, limiter);
-      }
-
-      const limitKey = command.rateLimitType === "global" ? "global" : (tags.userId || tags.username || "anonymous");
-      const rateLimit = limiter.acquire(limitKey);
-
-      if (rateLimit.limited) return;
-
-      rateLimit.consume();
-
-      // Ejecutar comando
-      const actionType = command.actionType || "key";
-
-      if ((actionType === "key" || actionType === "both") && window.electron) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        window.electron.pressKey(command.key).catch((err: any) => console.error("❌ Error:", err));
-      }
-
-      if ((actionType === "sound" || actionType === "both") && command.soundFile) {
-        try {
-          const audio = new Audio(command.soundFile.startsWith('data:') ? command.soundFile : `/${command.soundFile}`);
-          audio.volume = 1;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          audio.play().catch((err: any) => console.error("❌ Error:", err));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-          console.error("❌ Error:", err);
+      disconnectRef.current = () => {
+        if (client.readyState() === "OPEN") {
+          client.disconnect().catch((err) => console.error("Failed to disconnect:", err));
         }
-      }
-    });
+      };
+
+      client
+        .connect()
+        .then(() => {
+          SetConnect(true);
+        })
+        .catch((err) => {
+          console.error("Failed to connect Twitch:", err);
+          SetConnect(false);
+        });
+
+      client.on("message", (_ch, tags, message) => {
+        handleIncomingMessage({
+          username: tags.username || undefined,
+          userId: (tags["user-id"] as string | undefined) || tags.username || undefined,
+          message,
+          color: tags.color || undefined,
+        });
+      });
+    } else {
+      let ws: WebSocket | null = null;
+      let isActive = true;
+
+      disconnectRef.current = () => {
+        isActive = false;
+        if (ws) ws.close();
+      };
+
+      getKickChatroomId(channel)
+        .then((chatroomId) => {
+          if (!isActive) return;
+          ws = new WebSocket(`wss://ws-us2.pusher.com/app/${KICK_PUSHER_KEY}?protocol=7&client=js&version=7.6.0&flash=false`);
+
+          ws.onopen = () => {
+            ws?.send(
+              JSON.stringify({
+                event: "pusher:subscribe",
+                data: {
+                  auth: "",
+                  channel: `chatrooms.${chatroomId}.v2`,
+                },
+              })
+            );
+            SetConnect(true);
+          };
+
+          ws.onmessage = (event) => {
+            try {
+              const payload = JSON.parse(event.data as string) as { event?: string; data?: unknown };
+              if (payload.event !== "App\\Events\\ChatMessageEvent") return;
+
+              const parsedData = typeof payload.data === "string" ? JSON.parse(payload.data) : payload.data;
+              const data = parsedData as {
+                content?: string;
+                sender?: { username?: string; slug?: string; id?: number | string };
+              };
+
+              if (!data?.content) return;
+
+              handleIncomingMessage({
+                username: data.sender?.username || data.sender?.slug || "kick_user",
+                userId: data.sender?.id ? String(data.sender.id) : undefined,
+                message: data.content,
+              });
+            } catch (err) {
+              console.error("Kick message parse error:", err);
+            }
+          };
+
+          ws.onerror = (err) => {
+            console.error("Kick websocket error:", err);
+            SetConnect(false);
+          };
+
+          ws.onclose = () => {
+            SetConnect(false);
+          };
+        })
+        .catch((err) => {
+          console.error("Failed to connect Kick:", err);
+          SetConnect(false);
+        });
+    }
 
     return () => {
-      if (client.readyState() === "OPEN")
-        client
-          .disconnect()
-          .then(() => console.log("Disconnected from channel"))
-          .catch((err) => console.error("Failed to disconnect:", err));
+      if (disconnectRef.current) {
+        disconnectRef.current();
+        disconnectRef.current = null;
+      }
     };
-  }, [channel, processTTSQueue]);
+  }, [channel, platform, handleIncomingMessage]);
 
   const handleDisconnect = () => {
     ttsQueueRef.current = [];
@@ -290,8 +399,9 @@ export default function Home() {
     if (ttsControllerRef.current) {
       ttsControllerRef.current.cancel?.();
     }
-    if (tmiClientRef.current?.readyState() === "OPEN") {
-      tmiClientRef.current.disconnect();
+    if (disconnectRef.current) {
+      disconnectRef.current();
+      disconnectRef.current = null;
     }
     setChannel("");
     SetConnect(false);
@@ -307,6 +417,7 @@ export default function Home() {
       {/* Sidebar Component */}
       <Sidebar
         channel={channel}
+        platform={platform}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         barPosition={barPosition}
@@ -369,12 +480,24 @@ export default function Home() {
           {!channel ? (
             <div className="flex items-center justify-center flex-1 p-8">
               <div className="bg-[#18181b] border border-[#3f3f46] rounded-lg p-8 w-full max-w-md shadow-lg">
-                <h2 className="text-2xl font-bold text-white mb-2">Conectar a Twitch</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">Conectar a {platform === "kick" ? "Kick" : "Twitch"}</h2>
                 <p className="text-gray-400 mb-6 text-sm">
-                  Ingresa el nombre de tu canal para comenzar
+                  Selecciona plataforma e ingresa el nombre de tu canal para comenzar
                 </p>
 
                 <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-2">Plataforma</label>
+                    <select
+                      value={platform}
+                      onChange={(e) => setPlatform(e.target.value as ChatPlatform)}
+                      className="w-full px-4 py-2 bg-[#27272a] border border-[#3f3f46] text-white rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-colors"
+                      title="Seleccionar plataforma de chat"
+                    >
+                      <option value="twitch">TWITCH</option>
+                      <option value="kick">KICK</option>
+                    </select>
+                  </div>
                   <div>
                     <input
                       type="text"
@@ -441,7 +564,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="flex-1 overflow-hidden bg-gradient-to-br from-[#0f0f10] via-blue-950/5 to-[#0f0f10]">
-                  <CommandsPanel commands={commands} setCommands={setCommands} isLocked={false} />
+                  <CommandsPanel commands={commands} setCommands={setCommands} isLocked={false} platform={platform} />
                 </div>
               )}
               <Footer
@@ -475,8 +598,6 @@ export default function Home() {
     </main>
   );
 }
-
-
 
 
 

@@ -12,6 +12,29 @@ interface MessageProps {
   color?: string | undefined;
 }
 
+type ChatPlatform = "twitch" | "kick";
+
+interface KickChannelResponse {
+  chatroom?: {
+    id?: number | string;
+  };
+}
+
+const KICK_PUSHER_KEY = "32cbd69e4b950bf97679";
+
+async function getKickChatroomId(channelName: string): Promise<string> {
+  const response = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(channelName)}`);
+  if (!response.ok) {
+    throw new Error(`Kick channel lookup failed (${response.status})`);
+  }
+  const data = (await response.json()) as KickChannelResponse;
+  const chatroomId = data.chatroom?.id;
+  if (!chatroomId) {
+    throw new Error("Kick chatroom not found for this channel");
+  }
+  return String(chatroomId);
+}
+
 function ObsPageContent() {
 
   const [Messages, SetMessages] = useState<MessageProps[]>([]);
@@ -37,13 +60,68 @@ function ObsPageContent() {
     if (!mounted) return;
 
     const channel = searchParams.get("channel");
+    const platform = (searchParams.get("platform") || "twitch").toLowerCase() as ChatPlatform;
 
     if (!channel) {
       console.error("No channel parameter provided. Use ?channel=channelname");
       return;
     }
 
-    console.log(`Connecting to channel: ${channel}`);
+    console.log(`Connecting to ${platform} channel: ${channel}`);
+
+    if (platform === "kick") {
+      let ws: WebSocket | null = null;
+      let active = true;
+
+      getKickChatroomId(channel)
+        .then((chatroomId) => {
+          if (!active) return;
+          ws = new WebSocket(`wss://ws-us2.pusher.com/app/${KICK_PUSHER_KEY}?protocol=7&client=js&version=7.6.0&flash=false`);
+
+          ws.onopen = () => {
+            ws?.send(
+              JSON.stringify({
+                event: "pusher:subscribe",
+                data: {
+                  auth: "",
+                  channel: `chatrooms.${chatroomId}.v2`,
+                },
+              })
+            );
+          };
+
+          ws.onmessage = (event) => {
+            try {
+              const payload = JSON.parse(event.data as string) as { event?: string; data?: unknown };
+              if (payload.event !== "App\\Events\\ChatMessageEvent") return;
+              const parsedData = typeof payload.data === "string" ? JSON.parse(payload.data) : payload.data;
+              const data = parsedData as {
+                content?: string;
+                sender?: { username?: string; slug?: string };
+              };
+              if (!data?.content) return;
+
+              const newMessage: MessageProps = {
+                timestamp: new Date().toISOString(),
+                username: data.sender?.username || data.sender?.slug || "kick_user",
+                message: data.content,
+              };
+
+              SetMessages((prevMessages) => [...prevMessages, newMessage]);
+            } catch (err) {
+              console.error("Kick message parse error:", err);
+            }
+          };
+        })
+        .catch((err) => {
+          console.error("Failed to connect Kick:", err);
+        });
+
+      return () => {
+        active = false;
+        ws?.close();
+      };
+    }
 
     const client = new tmi.Client({
       channels: [channel.toLowerCase()],
@@ -61,8 +139,6 @@ function ObsPageContent() {
     client.on("message", (_channel, tags, message, self) => {
       if (self) return;
 
-      console.log(`Message from ${tags.username}: ${message}`);
-
       const newMessage: MessageProps = {
         timestamp: new Date().toISOString(),
         username: tags.username,
@@ -79,6 +155,7 @@ function ObsPageContent() {
   }, [mounted, searchParams]);
 
   const channel = searchParams.get("channel");
+  const platform = (searchParams.get("platform") || "twitch").toLowerCase() as ChatPlatform;
 
   return (
     <div 
@@ -97,7 +174,7 @@ function ObsPageContent() {
       ) : (
         <div className="flex items-center justify-center h-full">
           <p className="text-gray-500 text-sm">
-            {channel ? `Esperando mensajes en ${channel}...` : "Esperando..."}
+            {channel ? `Esperando mensajes en ${platform === "kick" ? "Kick" : "Twitch"}: ${channel}...` : "Esperando..."}
           </p>
         </div>
       )}

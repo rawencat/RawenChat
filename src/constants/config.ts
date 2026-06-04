@@ -15,7 +15,7 @@ export const DEFAULTS = {
 
 export const APP_INFO = {
   NAME: "RawenChat",
-  DESCRIPTION: "Visor de chat de Twitch con soporte de TTS y comandos personalizados",
+  DESCRIPTION: "Visor de chat de Twitch y Kick con soporte de TTS y comandos personalizados",
   THEME_COLOR: "#ffb823",
   APP_ID: "com.rawenchat.app",
 } as const;
@@ -23,5 +23,4 @@ export const APP_INFO = {
 export const DEV_CONFIG = {
   DEV_URL: "http://localhost:3000",
 } as const;
-
 

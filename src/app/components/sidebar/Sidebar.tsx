@@ -4,6 +4,7 @@ import { Chat20Regular, Settings20Filled, SignOut20Regular, Stop20Filled } from 
 
 interface SidebarProps {
   channel: string;
+  platform?: "twitch" | "kick";
   activeTab: "chat" | "commands";
   setActiveTab: (tab: "chat" | "commands") => void;
   barPosition: number;
@@ -17,6 +18,7 @@ interface SidebarProps {
 
 export default function Sidebar({
   channel,
+  platform = "twitch",
   activeTab,
   setActiveTab,
   barPosition,
@@ -98,7 +100,7 @@ export default function Sidebar({
         {channel && (
           <button
             onClick={() => {
-              const obsUrl = `http://localhost:3000/obs.html?channel=${channel}`;
+              const obsUrl = `http://localhost:3000/obs.html?channel=${encodeURIComponent(channel)}&platform=${platform}`;
               navigator.clipboard.writeText(obsUrl);
               setToastMessage("URL copiada al portapapeles");
             }}
@@ -129,7 +131,6 @@ export default function Sidebar({
     </aside>
   );
 }
-
 
 
 
