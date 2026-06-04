@@ -1,13 +1,19 @@
 
 # RawenChat
 
-App ligera para leer el chat de tu canal de Twitch o Kick y ejecutar comandos desde el chat.
+[![Download / Descargar](https://img.shields.io/badge/Download-Descargar-blue?style=for-the-badge)](https://github.com/RevenzMind/RawenChat/releases/latest) [![Twitch](https://img.shields.io/badge/Twitch-Supported-purple?style=for-the-badge&logo=twitch&logoColor=white)](https://www.twitch.tv) [![Kick](https://img.shields.io/badge/Kick-Supported-black?style=for-the-badge&logo=kick&logoColor=white)](https://kick.com)
 
-[![Download / Descargar](https://img.shields.io/badge/Download-Descargar-blue?style=for-the-badge)](https://github.com/RevenzMind/RawenChat/releases/latest)
+Aplicación ligera para leer el chat de tu canal en Twitch o Kick, ejecutar comandos desde el chat y aplicar acciones (sonidos, teclas, alerts) con soporte de TTS.
 
 ## Resumen rápido
 
 - Elige plataforma (Twitch/Kick), entra tu usuario y conecta.
+
+## Soporte de plataformas
+
+- **Twitch:** conexión mediante `tmi.js`, autenticación con OAuth y comandos en canal.
+- **Kick:** conexión vía WebSocket, lectura de chat en tiempo real y ejecución de comandos.
+
 - Verás el chat en tiempo real.
 - Usa comandos para reproducir sonidos, activar teclas o acciones.
 
