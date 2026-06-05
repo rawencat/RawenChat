@@ -101,7 +101,7 @@ export default function Sidebar({
         {channel && (
           <button
             onClick={() => {
-              const obsUrl = `http://localhost:3000/obs?channel=${encodeURIComponent(channel)}&platform=${platform}`;
+              const obsUrl = `http://localhost:3000/obs.html?channel=${encodeURIComponent(channel)}&platform=${platform}`;
               navigator.clipboard.writeText(obsUrl);
               setToastMessage("URL copiada al portapapeles");
             }}
