@@ -185,20 +185,33 @@ function startStaticServer(port: number = 3000): Promise<void> {
     
     const server = http.createServer(async (req, res) => {
       const url = req.url || "/";
-      const urlWithoutQuery = url.split("?")[0];
+      let urlWithoutQuery = url.split("?")[0];
+
+      // Trim trailing slash (except for the root "/")
+      if (urlWithoutQuery.length > 1 && urlWithoutQuery.endsWith("/")) {
+        urlWithoutQuery = urlWithoutQuery.slice(0, -1);
+      }
 
       // Serve static files only (APIs are now serverless via IPC)
       let filePath = path.join(outDir, urlWithoutQuery === "/" ? "index.html" : urlWithoutQuery);
 
-      // If file doesn't exist, try with .html extension (for Next.js export routes)
-      if (!fs.existsSync(filePath)) {
+      // Helper function to check if a path exists and is a file
+      const isFile = (p: string): boolean => {
+        try {
+          return fs.statSync(p).isFile();
+        } catch {
+          return false;
+        }
+      };
+
+      // If filePath does not point to an existing file, resolve the appropriate file path
+      if (!isFile(filePath)) {
         const htmlPath = filePath + ".html";
-        if (fs.existsSync(htmlPath)) {
+        if (isFile(htmlPath)) {
           filePath = htmlPath;
         } else {
-          // Try index.html in directory
           const indexPath = path.join(filePath, "index.html");
-          if (fs.existsSync(indexPath)) {
+          if (isFile(indexPath)) {
             filePath = indexPath;
           } else {
             // Fallback to root index.html
