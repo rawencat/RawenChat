@@ -12,8 +12,7 @@ const inter = Inter({
 
 export const viewport: Viewport = {
   themeColor: APP_INFO.THEME_COLOR,
-
-}
+};
 
 export const metadata: Metadata = {
   title: APP_INFO.NAME,
@@ -30,11 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <body className={`${inter.variable} antialiased`}>{children}</body>
     </html>
   );
 }

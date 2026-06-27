@@ -22,7 +22,7 @@ function extractVoiceName(voice: unknown): string | null {
   if (typeof voice === "string") {
     return voice;
   }
-  
+
   if (voice && typeof voice === "object") {
     const obj = voice as Record<string, unknown>;
     const name =
@@ -35,12 +35,12 @@ function extractVoiceName(voice: unknown): string | null {
       (typeof obj.Locale === "string" && obj.Locale) ||
       (typeof obj.locale === "string" && obj.locale) ||
       null;
-    
+
     if (name && typeof name === "string" && name !== "[object Object]") {
       return name;
     }
   }
-  
+
   return null;
 }
 
@@ -49,7 +49,7 @@ function extractVoiceName(voice: unknown): string | null {
  */
 export function normalizeVoices(voices: unknown[]): string[] {
   const voiceSet = new Set<string>();
-  
+
   if (Array.isArray(voices)) {
     voices.forEach((v) => {
       const voiceName = extractVoiceName(v);
@@ -58,7 +58,7 @@ export function normalizeVoices(voices: unknown[]): string[] {
       }
     });
   }
-  
+
   return Array.from(voiceSet);
 }
 
@@ -84,7 +84,7 @@ export async function speakMessage(
   message?: string,
   language: string = "es-ES",
   voice: string = "",
-  volume: number = 100
+  volume: number = 100,
 ): Promise<void> {
   if (!message) {
     return Promise.resolve();
@@ -127,7 +127,7 @@ export async function speakMessage(
 function playAudio(
   audioBase64: string,
   volume: number,
-  callback: () => void
+  callback: () => void,
 ): void {
   try {
     const binaryString = atob(audioBase64);
@@ -173,7 +173,7 @@ function speakViaAPI(
   language: string,
   voice: string,
   volume: number,
-  callback: () => void
+  callback: () => void,
 ): void {
   console.warn("API TTS not available - using Electron IPC only");
   callback();

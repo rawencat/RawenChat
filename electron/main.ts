@@ -4,8 +4,180 @@ import * as http from "http";
 import * as fs from "fs";
 import { WINDOW_CONFIG, DEV_URL, WIN_KEYS, MAC_KEYS } from "./config";
 import { EdgeTTS } from "@andresaya/edge-tts";
+import { WebSocket, WebSocketServer } from "ws";
 
 const isDev = !app.isPackaged;
+const AVATAR_WS_PORT = 3002;
+const AVATAR_HTTP_PORT = 3003;
+const AVATAR_SETTINGS_FILE = "avatar-settings.json";
+let avatarWss: WebSocketServer | null = null;
+
+type AvatarSettings = {
+  micId: string;
+  threshold: number;
+  idleImage: string;
+  activeImage: string;
+  idleImageName: string;
+  activeImageName: string;
+};
+
+function getAvatarDataDir(): string {
+  return path.join(app.getPath("userData"), "avatar");
+}
+
+function getAvatarAssetsDir(): string {
+  return path.join(getAvatarDataDir(), "assets");
+}
+
+function getAvatarSettingsPath(): string {
+  return path.join(getAvatarDataDir(), AVATAR_SETTINGS_FILE);
+}
+
+function ensureAvatarDirs(): void {
+  fs.mkdirSync(getAvatarAssetsDir(), { recursive: true });
+}
+
+function sanitizeFileName(fileName: string): string {
+  const extension = path.extname(fileName).toLowerCase() || ".png";
+  const baseName = path
+    .basename(fileName, extension)
+    .replace(/[^a-z0-9-_]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+
+  return `${baseName || "avatar"}-${Date.now()}${extension}`;
+}
+
+function getContentType(filePath: string): string {
+  const extension = path.extname(filePath).toLowerCase();
+  if (extension === ".png") return "image/png";
+  if (extension === ".jpg" || extension === ".jpeg") return "image/jpeg";
+  if (extension === ".gif") return "image/gif";
+  if (extension === ".webp") return "image/webp";
+  if (extension === ".svg") return "image/svg+xml";
+  if (extension === ".json") return "application/json";
+  if (extension === ".css") return "text/css";
+  if (extension === ".js") return "application/javascript";
+  if (extension === ".ico") return "image/x-icon";
+  if (extension === ".woff2") return "font/woff2";
+  return "text/html";
+}
+
+function writeJson(res: http.ServerResponse, data: unknown): void {
+  res.writeHead(200, {
+    "Access-Control-Allow-Origin": "*",
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store",
+  });
+  res.end(JSON.stringify(data));
+}
+
+function broadcastJson(
+  wss: WebSocketServer,
+  payload: Record<string, unknown>,
+): void {
+  const message = JSON.stringify(payload);
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
+function startAvatarWebSocketServer(): void {
+  const wss = new WebSocketServer({ port: AVATAR_WS_PORT });
+  avatarWss = wss;
+
+  wss.on("connection", (ws) => {
+    ws.on("message", (message: Buffer) => {
+      try {
+        const data = JSON.parse(message.toString()) as {
+          type?: string;
+          value?: unknown;
+        };
+
+        if (data.type === "UPDATE_AVATAR_STATE") {
+          broadcastJson(wss, { type: "SET_ACTIVE", value: Boolean(data.value) });
+        }
+
+        if (data.type === "UPDATE_THRESHOLD") {
+          broadcastJson(wss, { type: "NEW_THRESHOLD", value: data.value });
+        }
+      } catch (err) {
+        console.error("Error procesando mensaje WS en el servidor:", err);
+      }
+    });
+  });
+
+  console.log(
+    `Servidor de puente para OBS encendido en ws://localhost:${AVATAR_WS_PORT}`,
+  );
+}
+
+function startAvatarHttpServer(): void {
+  ensureAvatarDirs();
+
+  const server = http.createServer((req, res) => {
+    const requestUrl = new URL(req.url || "/", `http://127.0.0.1:${AVATAR_HTTP_PORT}`);
+
+    if (requestUrl.pathname === "/avatar-settings") {
+      fs.readFile(getAvatarSettingsPath(), "utf8", (err, data) => {
+        if (err) {
+          writeJson(res, null);
+          return;
+        }
+
+        res.writeHead(200, {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        });
+        res.end(data);
+      });
+      return;
+    }
+
+    if (requestUrl.pathname.startsWith("/avatar-assets/")) {
+      const fileName = decodeURIComponent(
+        requestUrl.pathname.replace("/avatar-assets/", ""),
+      );
+      const filePath = path.resolve(getAvatarAssetsDir(), fileName);
+      const assetsDir = path.resolve(getAvatarAssetsDir());
+
+      if (!filePath.startsWith(assetsDir + path.sep)) {
+        res.writeHead(403);
+        res.end("Forbidden");
+        return;
+      }
+
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          res.writeHead(404);
+          res.end("Not Found");
+          return;
+        }
+
+        res.writeHead(200, {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": getContentType(filePath),
+          "Cache-Control": "no-store",
+        });
+        res.end(data);
+      });
+      return;
+    }
+
+    res.writeHead(404, { "Access-Control-Allow-Origin": "*" });
+    res.end("Not Found");
+  });
+
+  server.listen(AVATAR_HTTP_PORT, "127.0.0.1", () => {
+    console.log(
+      `Servidor local de avatar para OBS en http://127.0.0.1:${AVATAR_HTTP_PORT}`,
+    );
+  });
+}
 
 function startStaticServer(port: number = 3000): Promise<void> {
   return new Promise((resolve) => {
@@ -42,16 +214,7 @@ function startStaticServer(port: number = 3000): Promise<void> {
           return;
         }
 
-        let contentType = "text/html";
-        if (filePath.endsWith(".css")) contentType = "text/css";
-        if (filePath.endsWith(".js")) contentType = "application/javascript";
-        if (filePath.endsWith(".json")) contentType = "application/json";
-        if (filePath.endsWith(".png")) contentType = "image/png";
-        if (filePath.endsWith(".jpg")) contentType = "image/jpeg";
-        if (filePath.endsWith(".ico")) contentType = "image/x-icon";
-        if (filePath.endsWith(".woff2")) contentType = "font/woff2";
-
-        res.writeHead(200, { "Content-Type": contentType });
+        res.writeHead(200, { "Content-Type": getContentType(filePath) });
         res.end(data);
       });
     });
@@ -62,7 +225,7 @@ function startStaticServer(port: number = 3000): Promise<void> {
   });
 }
 
-function createWindow() {
+async function createWindow() {
   const win = new BrowserWindow({
     width: WINDOW_CONFIG.WIDTH,
     height: WINDOW_CONFIG.HEIGHT,
@@ -79,6 +242,7 @@ function createWindow() {
       contextIsolation: true,
       devTools: true,
       sandbox: true,
+      backgroundThrottling: false,
     },
   });
 
@@ -95,6 +259,14 @@ app.whenReady().then(async () => {
   if (!isDev) {
     await startStaticServer();
   }
+
+  try {
+    startAvatarWebSocketServer();
+    startAvatarHttpServer();
+  } catch (err) {
+    console.error("Error crítico al levantar servicios del avatar:", err);
+  }
+
   createWindow();
 });
 
@@ -261,6 +433,54 @@ ipcMain.handle(
 ipcMain.handle("stop-speaking", () => {
   audioBuffer = null;
   return Promise.resolve();
+});
+
+ipcMain.handle(
+  "save-avatar-image",
+  async (
+    _event,
+    { fileName, dataUrl }: { fileName: string; dataUrl: string },
+  ): Promise<{ url: string; fileName: string }> => {
+    ensureAvatarDirs();
+
+    const match = /^data:[^;]+;base64,(.+)$/i.exec(dataUrl);
+    if (!match) {
+      throw new Error("Formato de imagen inválido.");
+    }
+
+    const safeFileName = sanitizeFileName(fileName);
+    const filePath = path.join(getAvatarAssetsDir(), safeFileName);
+    await fs.promises.writeFile(filePath, Buffer.from(match[1], "base64"));
+
+    return {
+      fileName,
+      url: `http://127.0.0.1:${AVATAR_HTTP_PORT}/avatar-assets/${encodeURIComponent(safeFileName)}`,
+    };
+  },
+);
+
+ipcMain.handle(
+  "save-avatar-settings",
+  async (_event, settings: AvatarSettings): Promise<void> => {
+    ensureAvatarDirs();
+    await fs.promises.writeFile(
+      getAvatarSettingsPath(),
+      JSON.stringify(settings, null, 2),
+      "utf8",
+    );
+    if (avatarWss) {
+      broadcastJson(avatarWss, { type: "AVATAR_SETTINGS_UPDATED" });
+    }
+  },
+);
+
+ipcMain.handle("get-avatar-settings", async (): Promise<AvatarSettings | null> => {
+  try {
+    const data = await fs.promises.readFile(getAvatarSettingsPath(), "utf8");
+    return JSON.parse(data) as AvatarSettings;
+  } catch {
+    return null;
+  }
 });
 
 ipcMain.handle("get-diagnostics", () => {

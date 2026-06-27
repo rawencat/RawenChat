@@ -1,7 +1,4 @@
-import { 
-  SpeakerMute20Filled,
-  Settings20Filled
-} from "@fluentui/react-icons";
+import { SpeakerMute20Filled, Settings20Filled } from "@fluentui/react-icons";
 import ControlBox from "./controlbox";
 
 interface HeaderProps {
@@ -18,9 +15,9 @@ export default function Header({
   openModal,
 }: HeaderProps) {
   return (
-    <div 
+    <div
       className="flex-shrink-0 flex items-center bg-[#18181b] border-b border-[#3f3f46] justify-between px-4 py-3"
-      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
     >
       <div className="bg-[#27272a] px-4 py-2 rounded-lg flex items-center justify-between gap-4">
         <div className="items-center flex">
@@ -41,7 +38,10 @@ export default function Header({
         </h1>
       </div>
 
-      <div className="flex items-center gap-3" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div
+        className="flex items-center gap-3"
+        style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+      >
         {TTS ? (
           <button
             className="px-4 py-2 cursor-pointer text-sm inline-flex gap-2 bg-red-950 hover:bg-red-900 transition-colors duration-100 rounded-lg text-white"

@@ -1,6 +1,10 @@
 "use client";
 import { useState } from "react";
-import { Keyboard20Filled, Joystick20Filled, Speaker020Regular } from "@fluentui/react-icons";
+import {
+  Keyboard20Filled,
+  Joystick20Filled,
+  Speaker020Regular,
+} from "@fluentui/react-icons";
 import { isValidKey } from "@/constants/validation";
 import { DEFAULTS } from "@/constants/config";
 import { getPlatformDisplayName, type ChatPlatform } from "@/utils/platform";
@@ -23,14 +27,14 @@ interface CommandsPanelProps {
   platform?: ChatPlatform;
 }
 
-const EMPTY_COMMAND: Omit<Command, "id"> = { 
-  name: "", 
-  trigger: "", 
-  key: "", 
-  timeout: DEFAULTS.COMMAND_TIMEOUT_MS, 
-  actionType: DEFAULTS.COMMAND_ACTION_TYPE, 
+const EMPTY_COMMAND: Omit<Command, "id"> = {
+  name: "",
+  trigger: "",
+  key: "",
+  timeout: DEFAULTS.COMMAND_TIMEOUT_MS,
+  actionType: DEFAULTS.COMMAND_ACTION_TYPE,
   soundFile: "",
-  rateLimitType: "per-user"
+  rateLimitType: "per-user",
 };
 
 export default function CommandsPanel({
@@ -61,7 +65,15 @@ export default function CommandsPanel({
     const mins = Math.floor(totalMs / 60000);
     const secs = Math.floor((totalMs % 60000) / 1000);
     setEditing(cmd);
-    setForm({ name: cmd.name, trigger: cmd.trigger, key: cmd.key, timeout: cmd.timeout, actionType: cmd.actionType, soundFile: cmd.soundFile, rateLimitType: cmd.rateLimitType || "per-user" });
+    setForm({
+      name: cmd.name,
+      trigger: cmd.trigger,
+      key: cmd.key,
+      timeout: cmd.timeout,
+      actionType: cmd.actionType,
+      soundFile: cmd.soundFile,
+      rateLimitType: cmd.rateLimitType || "per-user",
+    });
     setTimeoutMinutes(mins);
     setTimeoutSeconds(secs);
     setSelectedFileName(cmd.soundFile ? "[Audio guardado]" : "");
@@ -88,7 +100,7 @@ export default function CommandsPanel({
 
   function getNextId(): string {
     if (commands.length === 0) return "1";
-    const maxId = Math.max(...commands.map(c => parseInt(c.id) || 0));
+    const maxId = Math.max(...commands.map((c) => parseInt(c.id) || 0));
     return String(maxId + 1);
   }
 
@@ -99,12 +111,20 @@ export default function CommandsPanel({
       const reader = new FileReader();
       reader.onload = (e) => {
         const dataUrl = e.target?.result as string;
-        
+
         const updated = editing?.id
           ? commands.map((c) =>
               c.id === editing.id
-                ? { ...c, ...form, soundFile: dataUrl, timeout: totalTimeoutMs, trigger: form.trigger.trim().toLowerCase(), key: form.key.trim().toLowerCase(), rateLimitType: form.rateLimitType || "per-user" }
-                : c
+                ? {
+                    ...c,
+                    ...form,
+                    soundFile: dataUrl,
+                    timeout: totalTimeoutMs,
+                    trigger: form.trigger.trim().toLowerCase(),
+                    key: form.key.trim().toLowerCase(),
+                    rateLimitType: form.rateLimitType || "per-user",
+                  }
+                : c,
             )
           : [
               ...commands,
@@ -126,12 +146,20 @@ export default function CommandsPanel({
       reader.readAsDataURL(audioBlob);
       return;
     }
-    
+
     const updated = editing?.id
       ? commands.map((c) =>
           c.id === editing.id
-            ? { ...c, ...form, soundFile: form.soundFile || "", timeout: totalTimeoutMs, trigger: form.trigger.trim().toLowerCase(), key: form.key.trim().toLowerCase(), rateLimitType: form.rateLimitType || "per-user" }
-            : c
+            ? {
+                ...c,
+                ...form,
+                soundFile: form.soundFile || "",
+                timeout: totalTimeoutMs,
+                trigger: form.trigger.trim().toLowerCase(),
+                key: form.key.trim().toLowerCase(),
+                rateLimitType: form.rateLimitType || "per-user",
+              }
+            : c,
         )
       : [
           ...commands,
@@ -185,7 +213,7 @@ export default function CommandsPanel({
       {/* Command list */}
       {commands.length === 0 && !editing && (
         <div className="flex flex-col items-center justify-center flex-1 gap-3 text-gray-500">
-          <Joystick20Filled style={{ fontSize: '48px' }} />
+          <Joystick20Filled style={{ fontSize: "48px" }} />
           <p className="text-sm">No hay comandos todavía. ¡Crea el primero!</p>
         </div>
       )}
@@ -207,17 +235,23 @@ export default function CommandsPanel({
                 <span>→</span>
                 <span className="bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded font-mono uppercase flex items-center gap-1">
                   {cmd.actionType === "key" && <span>{cmd.key}</span>}
-                  {cmd.actionType === "sound" && <Speaker020Regular style={{ fontSize: '14px' }} />}
+                  {cmd.actionType === "sound" && (
+                    <Speaker020Regular style={{ fontSize: "14px" }} />
+                  )}
                   {cmd.actionType === "both" && (
                     <>
                       <span>{cmd.key}</span>
                       <span>+</span>
-                      <Speaker020Regular style={{ fontSize: '14px' }} />
+                      <Speaker020Regular style={{ fontSize: "14px" }} />
                     </>
                   )}
                 </span>
-                <span className="text-gray-500">({(cmd.timeout || DEFAULTS.COMMAND_TIMEOUT_MS) / 1000}s)</span>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${cmd.rateLimitType === "global" ? "bg-purple-900/40 text-purple-300" : "bg-green-900/40 text-green-300"}`}>
+                <span className="text-gray-500">
+                  ({(cmd.timeout || DEFAULTS.COMMAND_TIMEOUT_MS) / 1000}s)
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded text-xs font-medium ${cmd.rateLimitType === "global" ? "bg-purple-900/40 text-purple-300" : "bg-green-900/40 text-green-300"}`}
+                >
                   {cmd.rateLimitType === "global" ? "Global" : "Per-User"}
                 </span>
               </div>
@@ -278,9 +312,7 @@ export default function CommandsPanel({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-400">
-              Tecla a presionar
-            </label>
+            <label className="text-xs text-gray-400">Tecla a presionar</label>
             <input
               type="text"
               value={form.key}
@@ -290,8 +322,8 @@ export default function CommandsPanel({
               className="bg-[#18181b] border border-[#3f3f46] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <span className="text-gray-500 text-xs">
-              Letras, números o nombres especiales: space, enter, escape, f1–f12,
-              up, down, left, right, tab, backspace
+              Letras, números o nombres especiales: space, enter, escape,
+              f1–f12, up, down, left, right, tab, backspace
             </span>
             {errors.key && (
               <span className="text-red-400 text-xs">{errors.key}</span>
@@ -302,7 +334,12 @@ export default function CommandsPanel({
             <label className="text-xs text-gray-400">Tipo de acción</label>
             <select
               value={form.actionType || "key"}
-              onChange={(e) => setForm({ ...form, actionType: e.target.value as "key" | "sound" | "both" })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  actionType: e.target.value as "key" | "sound" | "both",
+                })
+              }
               className="bg-[#18181b] border border-[#3f3f46] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Tipo de acción a ejecutar"
             >
@@ -316,7 +353,12 @@ export default function CommandsPanel({
             <label className="text-xs text-gray-400">Tipo de Rate Limit</label>
             <select
               value={form.rateLimitType || "per-user"}
-              onChange={(e) => setForm({ ...form, rateLimitType: e.target.value as "global" | "per-user" })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  rateLimitType: e.target.value as "global" | "per-user",
+                })
+              }
               className="bg-[#18181b] border border-[#3f3f46] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Global: todos los usuarios comparten el límite. Per-user: cada usuario tiene su propio límite"
             >
@@ -324,10 +366,14 @@ export default function CommandsPanel({
               <option value="global">Global</option>
             </select>
             <span className="text-gray-500 text-xs">
-              Por Usuario: cada usuario tiene su propio límite de {Math.round((form.timeout || DEFAULTS.COMMAND_TIMEOUT_MS) / 1000)}s
+              Por Usuario: cada usuario tiene su propio límite de{" "}
+              {Math.round((form.timeout || DEFAULTS.COMMAND_TIMEOUT_MS) / 1000)}
+              s
             </span>
             <span className="text-gray-500 text-xs">
-              Global: aunque 10 usuarios lo manden, solo se ejecutará 1 vez cada {Math.round((form.timeout || DEFAULTS.COMMAND_TIMEOUT_MS) / 1000)}s
+              Global: aunque 10 usuarios lo manden, solo se ejecutará 1 vez cada{" "}
+              {Math.round((form.timeout || DEFAULTS.COMMAND_TIMEOUT_MS) / 1000)}
+              s
             </span>
           </div>
 
@@ -335,7 +381,6 @@ export default function CommandsPanel({
             <div className="flex flex-col gap-1">
               <label className="text-xs text-gray-400">Archivo de audio</label>
               <div className="flex flex-col gap-2">
-               
                 <input
                   type="file"
                   accept=".mp3,.wav,.ogg,.m4a,audio/*"
@@ -362,7 +407,9 @@ export default function CommandsPanel({
           )}
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-400">Duración del timeout</label>
+            <label className="text-xs text-gray-400">
+              Duración del timeout
+            </label>
             <div className="flex gap-2">
               <div className="flex-1">
                 <input
@@ -370,7 +417,11 @@ export default function CommandsPanel({
                   min="0"
                   max="59"
                   value={timeoutMinutes}
-                  onChange={(e) => setTimeoutMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                  onChange={(e) =>
+                    setTimeoutMinutes(
+                      Math.max(0, parseInt(e.target.value) || 0),
+                    )
+                  }
                   placeholder="0"
                   className="w-full bg-[#18181b] border border-[#3f3f46] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -382,7 +433,11 @@ export default function CommandsPanel({
                   min="0"
                   max="59"
                   value={timeoutSeconds}
-                  onChange={(e) => setTimeoutSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                  onChange={(e) =>
+                    setTimeoutSeconds(
+                      Math.max(0, Math.min(59, parseInt(e.target.value) || 0)),
+                    )
+                  }
                   placeholder="5"
                   className="w-full bg-[#18181b] border border-[#3f3f46] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -390,7 +445,8 @@ export default function CommandsPanel({
               </div>
             </div>
             <span className="text-gray-500 text-xs">
-              Total: {timeoutMinutes}m {timeoutSeconds}s = {timeoutMinutes * 60 + timeoutSeconds}s
+              Total: {timeoutMinutes}m {timeoutSeconds}s ={" "}
+              {timeoutMinutes * 60 + timeoutSeconds}s
             </span>
           </div>
 

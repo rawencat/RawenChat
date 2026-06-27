@@ -1,8 +1,8 @@
 "use client";
-import { 
-  Subtract20Regular, 
-  Square20Regular, 
-  Dismiss20Regular, 
+import {
+  Subtract20Regular,
+  Square20Regular,
+  Dismiss20Regular,
 } from "@fluentui/react-icons";
 import { useEffect, useState } from "react";
 
@@ -10,7 +10,7 @@ export default function ControlBox() {
   const [hasElectron, setHasElectron] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.electron) {
+    if (typeof window !== "undefined" && window.electron) {
       setHasElectron(true);
     }
   }, []);

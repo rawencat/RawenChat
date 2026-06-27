@@ -13,7 +13,9 @@ export default function Toast({ message, type = "success" }: ToastProps) {
   };
 
   return (
-    <div className={`fixed top-20 right-4 ${typeStyles[type]} text-white px-4 py-3 rounded-lg shadow-lg animate-slide-in z-50`}>
+    <div
+      className={`fixed top-20 right-4 ${typeStyles[type]} text-white px-4 py-3 rounded-lg shadow-lg animate-slide-in z-50`}
+    >
       {message}
     </div>
   );

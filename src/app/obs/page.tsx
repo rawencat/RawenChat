@@ -15,7 +15,6 @@ interface MessageProps {
 }
 
 function ObsPageContent() {
-
   const [Messages, SetMessages] = useState<MessageProps[]>([]);
   const [mounted, setMounted] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -23,7 +22,8 @@ function ObsPageContent() {
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
     }
   };
 
@@ -39,7 +39,9 @@ function ObsPageContent() {
     if (!mounted) return;
 
     const channel = searchParams.get("channel");
-    const platform = (searchParams.get("platform") || "twitch").toLowerCase() as ChatPlatform;
+    const platform = (
+      searchParams.get("platform") || "twitch"
+    ).toLowerCase() as ChatPlatform;
 
     if (!channel) {
       console.error("No channel parameter provided. Use ?channel=channelname");
@@ -65,15 +67,21 @@ function ObsPageContent() {
                   auth: "", // Public chatrooms do not require signed auth tokens.
                   channel: `chatrooms.${chatroomId}.v2`,
                 },
-              })
+              }),
             );
           };
 
           ws.onmessage = (event) => {
             try {
-              const payload = JSON.parse(event.data as string) as { event?: string; data?: unknown };
+              const payload = JSON.parse(event.data as string) as {
+                event?: string;
+                data?: unknown;
+              };
               if (payload.event !== "App\\Events\\ChatMessageEvent") return;
-              const parsedData = typeof payload.data === "string" ? JSON.parse(payload.data) : payload.data;
+              const parsedData =
+                typeof payload.data === "string"
+                  ? JSON.parse(payload.data)
+                  : payload.data;
               const data = parsedData as {
                 content?: string;
                 sender?: { username?: string; slug?: string };
@@ -82,7 +90,8 @@ function ObsPageContent() {
 
               const newMessage: MessageProps = {
                 timestamp: new Date().toISOString(),
-                username: data.sender?.username || data.sender?.slug || "kick_user",
+                username:
+                  data.sender?.username || data.sender?.slug || "kick_user",
                 message: data.content,
               };
 
@@ -134,26 +143,31 @@ function ObsPageContent() {
   }, [mounted, searchParams]);
 
   const channel = searchParams.get("channel");
-  const platform = (searchParams.get("platform") || "twitch").toLowerCase() as ChatPlatform;
+  const platform = (
+    searchParams.get("platform") || "twitch"
+  ).toLowerCase() as ChatPlatform;
 
   return (
-    <div 
+    <div
       ref={messagesContainerRef}
       className="messages-container h-screen overflow-y-auto bg-transparent"
-      style={{ scrollBehavior: 'smooth' }}
+      style={{ scrollBehavior: "smooth" }}
     >
       {Messages.length > 0 ? (
         Messages.map((msg) => (
-          <MessagesRender 
-            ShowTime={false} 
-            msg={msg} 
-            key={`${msg.timestamp}-${msg.username}`} 
-          />
+          <div key={`${msg.timestamp}-${msg.username}`} className="animate-plop">
+            <MessagesRender
+              ShowTime={false}
+              msg={msg}
+            />
+          </div>
         ))
       ) : (
         <div className="flex items-center justify-center h-full">
           <p className="text-gray-500 text-sm">
-            {channel ? `Esperando mensajes en ${getPlatformDisplayName(platform)}: ${channel}...` : "Esperando..."}
+            {channel
+              ? `Esperando mensajes en ${getPlatformDisplayName(platform)}: ${channel}...`
+              : "Esperando..."}
           </p>
         </div>
       )}
@@ -163,7 +177,13 @@ function ObsPageContent() {
 
 export default function ObsPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-screen text-gray-500">Cargando...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-screen text-gray-500">
+          Cargando...
+        </div>
+      }
+    >
       <ObsPageContent />
     </Suspense>
   );

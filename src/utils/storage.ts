@@ -1,4 +1,3 @@
-
 export function getFromStorage<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
   try {

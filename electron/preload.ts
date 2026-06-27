@@ -18,6 +18,14 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("speak-message", { text, language, voice }),
   stopSpeaking: (): Promise<void> =>
     ipcRenderer.invoke("stop-speaking"),
+
+  // Avatar overlay persistence
+  saveAvatarImage: (fileName: string, dataUrl: string): Promise<{ url: string; fileName: string }> =>
+    ipcRenderer.invoke("save-avatar-image", { fileName, dataUrl }),
+  saveAvatarSettings: (settings: unknown): Promise<void> =>
+    ipcRenderer.invoke("save-avatar-settings", settings),
+  getAvatarSettings: (): Promise<unknown | null> =>
+    ipcRenderer.invoke("get-avatar-settings"),
   
   // Diagnostics
   getDiagnostics: (): Promise<{ isElectron: true; version: string }> =>

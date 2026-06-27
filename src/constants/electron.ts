@@ -1,5 +1,3 @@
-
-
 export const ELECTRON_CONFIG = {
   WINDOW: {
     WIDTH: 1280,
@@ -79,5 +77,3 @@ export const MAC_KEY_MAP: Record<string, string> = {
   f11: "F11",
   f12: "F12",
 };
-
-
