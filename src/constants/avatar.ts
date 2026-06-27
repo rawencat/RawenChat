@@ -17,9 +17,9 @@ export const AVATAR_DEFAULTS = {
   SAMPLE_INTERVAL_MS: 50,
   SILENCE_HOLD_MS: 150,
   MIN_NOISE_PERCENT: 12,
-  IDLE_IMAGE: "https://cdn.rawencat.tech/1758710381105.jpg",
+  IDLE_IMAGE: "https://cdn.rawencat.tech/idle.png",
   ACTIVE_IMAGE:
-    "https://cdn.discordapp.com/attachments/1517775603036848189/1519165929714483220/image.png?ex=6a3fdcc6&is=6a3e8b46&hm=b181121b97e30e124c806cfddc41b575786bec552ff951ead0209f4418409e46&",
+    "https://cdn.rawencat.tech/active.png",
 } as const;
 
 export interface AvatarSettings {
