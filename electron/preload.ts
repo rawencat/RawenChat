@@ -16,8 +16,7 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("get-voices", language),
   speakMessage: (text: string, language: string, voice: string): Promise<string> =>
     ipcRenderer.invoke("speak-message", { text, language, voice }),
-  stopSpeaking: (): Promise<void> =>
-    ipcRenderer.invoke("stop-speaking"),
+
 
   
   saveAvatarImage: (fileName: string, dataUrl: string): Promise<{ url: string; fileName: string }> =>
