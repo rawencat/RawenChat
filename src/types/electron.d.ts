@@ -6,21 +6,39 @@ declare global {
     currentVolume?: number;
     currentAvatarTalking?: boolean;
     electron?: {
-      /** Simulate a key press at OS level (only available inside Electron). */
+      
       pressKey: (key: string) => Promise<void>;
-      /** Minimize the window (only available inside Electron). */
+      
       minimize: () => Promise<void>;
-      /** Maximize/unmaximize the window (only available inside Electron). */
+      
       maximize: () => Promise<void>;
-      /** Close the window (only available inside Electron). */
+      
       close: () => Promise<void>;
+      
+      getVoices: (language: string) => Promise<string[]>;
+      
+      speakMessage: (text: string, language: string, voice: string) => Promise<string>;
+      
+      stopSpeaking: () => Promise<void>;
       saveAvatarImage: (
         fileName: string,
         dataUrl: string,
       ) => Promise<{ url: string; fileName: string }>;
       saveAvatarSettings: (settings: unknown) => Promise<void>;
       getAvatarSettings: () => Promise<unknown | null>;
-      /** True when running inside Electron, undefined in the browser. */
+      saveObsComponent: (componentCode: string) => Promise<void>;
+      getObsComponent: () => Promise<string | null>;
+      
+      getDiagnostics: () => Promise<{ isElectron: true; version: string }>;
+      
+      checkForUpdates: () => Promise<{ success: boolean; message?: string }>;
+      
+      downloadUpdate: () => Promise<{ success: boolean; message?: string }>;
+      
+      installUpdate: () => Promise<{ success: boolean; message?: string }>;
+      
+      onUpdateStatus: (callback: (status: string, data?: unknown) => void) => () => void;
+      
       isElectron: boolean;
     };
     electronAPI: {

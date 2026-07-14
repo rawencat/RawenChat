@@ -15,6 +15,7 @@ interface MainTabContentProps {
   messages: MessageProps[];
   platform: ChatPlatform;
   setCommands: (commands: Command[]) => void;
+  setToastMessage: (msg: string) => void;
 }
 
 export default function MainTabContent({
@@ -25,25 +26,24 @@ export default function MainTabContent({
   messages,
   platform,
   setCommands,
+  setToastMessage,
 }: MainTabContentProps) {
   return (
     <>
-      {activeTab === "chat" ? (
-        <ChatPanel channel={channel} messages={messages} />
-      ) : activeTab === "commands" ? (
-        <div className="flex-1 overflow-hidden bg-gradient-to-br from-[#0f0f10] via-blue-950/5 to-[#0f0f10]">
+      <div key={activeTab} className="flex-1 flex flex-col min-h-0 animate-tab-enter">
+        {activeTab === "chat" ? (
+          <ChatPanel channel={channel} platform={platform} messages={messages} setToastMessage={setToastMessage} />
+        ) : activeTab === "commands" ? (
           <CommandsPanel
             commands={commands}
             setCommands={setCommands}
             isLocked={false}
             platform={platform}
           />
-        </div>
-      ) : (
-        <div className="flex-1 overflow-hidden">
-          <Avatar />
-        </div>
-      )}
+        ) : (
+          <Avatar setToastMessage={setToastMessage} />
+        )}
+      </div>
 
       <Footer
         IsConnected={isConnected}

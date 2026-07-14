@@ -2,15 +2,23 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 import * as http from "http";
 import * as fs from "fs";
+import { execFile } from "child_process";
 import { WINDOW_CONFIG, DEV_URL, WIN_KEYS, MAC_KEYS } from "./config";
 import { EdgeTTS } from "@andresaya/edge-tts";
 import { WebSocket, WebSocketServer } from "ws";
+import { autoUpdater } from "electron-updater";
+import log from "electron-log";
 
 const isDev = !app.isPackaged;
 const AVATAR_WS_PORT = 3002;
 const AVATAR_HTTP_PORT = 3003;
 const AVATAR_SETTINGS_FILE = "avatar-settings.json";
+const OBS_COMPONENT_FILE = "obs-component.json";
 let avatarWss: WebSocketServer | null = null;
+
+function getObsComponentPath(): string {
+  return path.join(app.getPath("userData"), OBS_COMPONENT_FILE);
+}
 
 type AvatarSettings = {
   micId: string;
@@ -111,7 +119,7 @@ function startAvatarWebSocketServer(): void {
   });
 
   console.log(
-    `Servidor de puente para OBS encendido en ws://localhost:${AVATAR_WS_PORT}`,
+    `Servidor de puente para OBS encendido en ws://127.0.0.1:${AVATAR_WS_PORT}`
   );
 }
 
@@ -123,6 +131,23 @@ function startAvatarHttpServer(): void {
 
     if (requestUrl.pathname === "/avatar-settings") {
       fs.readFile(getAvatarSettingsPath(), "utf8", (err, data) => {
+        if (err) {
+          writeJson(res, null);
+          return;
+        }
+
+        res.writeHead(200, {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        });
+        res.end(data);
+      });
+      return;
+    }
+    
+    if (requestUrl.pathname === "/obs-component") {
+      fs.readFile(getObsComponentPath(), "utf8", (err, data) => {
         if (err) {
           writeJson(res, null);
           return;
@@ -187,15 +212,15 @@ function startStaticServer(port: number = 3000): Promise<void> {
       const url = req.url || "/";
       let urlWithoutQuery = url.split("?")[0];
 
-      // Trim trailing slash (except for the root "/")
+      
       if (urlWithoutQuery.length > 1 && urlWithoutQuery.endsWith("/")) {
         urlWithoutQuery = urlWithoutQuery.slice(0, -1);
       }
 
-      // Serve static files only (APIs are now serverless via IPC)
+      
       let filePath = path.join(outDir, urlWithoutQuery === "/" ? "index.html" : urlWithoutQuery);
 
-      // Helper function to check if a path exists and is a file
+      
       const isFile = (p: string): boolean => {
         try {
           return fs.statSync(p).isFile();
@@ -204,7 +229,7 @@ function startStaticServer(port: number = 3000): Promise<void> {
         }
       };
 
-      // If filePath does not point to an existing file, resolve the appropriate file path
+      
       if (!isFile(filePath)) {
         const htmlPath = filePath + ".html";
         if (isFile(htmlPath)) {
@@ -214,7 +239,7 @@ function startStaticServer(port: number = 3000): Promise<void> {
           if (isFile(indexPath)) {
             filePath = indexPath;
           } else {
-            // Fallback to root index.html
+            
             filePath = path.join(outDir, "index.html");
           }
         }
@@ -259,12 +284,25 @@ async function createWindow() {
     },
   });
 
+  mainWindow = win;
+
   if (isDev) {
     win.loadURL(DEV_URL);
     win.webContents.openDevTools();
   } else {
     win.loadURL("http://localhost:3000");
   }
+
+  win.webContents.on("did-finish-load", async () => {
+    if (!isDev) {
+      log.info("Checking for updates on app start...");
+      try {
+        await autoUpdater.checkForUpdates();
+      } catch (error) {
+        log.error("Error checking for updates on start:", error);
+      }
+    }
+  });
 
 }
 
@@ -291,7 +329,6 @@ app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-
 const ALLOWED_KEY_RE =
   /^(?:[a-zA-Z0-9]|F(?:1[0-2]|[1-9])|space|enter|escape|backspace|tab|up|down|left|right|shift|ctrl|alt|win)$/i;
 
@@ -306,7 +343,6 @@ ipcMain.handle("press-key", async (_event, key: string) => {
 
 function simulateKey(key: string): void {
   const platform = process.platform;
-  const { execFile } = require("child_process") as typeof import("child_process");
 
   if (platform === "win32") {
     const winKey = WIN_KEYS[key] ?? key;
@@ -496,9 +532,110 @@ ipcMain.handle("get-avatar-settings", async (): Promise<AvatarSettings | null> =
   }
 });
 
+ipcMain.handle("save-obs-component", async (_event, componentCode: string): Promise<void> => {
+  await fs.promises.writeFile(
+    getObsComponentPath(),
+    JSON.stringify({ componentCode }, null, 2),
+    "utf8",
+  );
+});
+
+ipcMain.handle("get-obs-component", async (): Promise<string | null> => {
+  try {
+    const data = await fs.promises.readFile(getObsComponentPath(), "utf8");
+    const parsed = JSON.parse(data) as { componentCode: string };
+    return parsed.componentCode;
+  } catch {
+    return null;
+  }
+});
+
 ipcMain.handle("get-diagnostics", () => {
   return {
     isElectron: true,
     version: app.getVersion(),
   };
+});
+
+let mainWindow: BrowserWindow | null = null;
+
+log.transports.file.level = "info";
+autoUpdater.logger = log;
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+function sendUpdateStatusToRenderer(status: string, data?: unknown) {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send("update-status", status, data);
+  }
+}
+
+autoUpdater.on("checking-for-update", () => {
+  log.info("Checking for updates...");
+  sendUpdateStatusToRenderer("checking");
+});
+
+autoUpdater.on("update-available", (info) => {
+  log.info("Update available:", info.version);
+  sendUpdateStatusToRenderer("available", info);
+});
+
+autoUpdater.on("update-not-available", (info) => {
+  log.info("Update not available:", info.version);
+  sendUpdateStatusToRenderer("not-available");
+});
+
+autoUpdater.on("error", (err) => {
+  log.error("Error in auto-updater:", err);
+  sendUpdateStatusToRenderer("error", err.message);
+});
+
+autoUpdater.on("download-progress", (progressObj) => {
+  log.info(`Download progress: ${progressObj.percent}%`);
+  sendUpdateStatusToRenderer("downloading", progressObj);
+});
+
+autoUpdater.on("update-downloaded", (info) => {
+  log.info("Update downloaded:", info.version);
+  sendUpdateStatusToRenderer("downloaded", info);
+});
+
+ipcMain.handle("check-for-updates", async () => {
+  if (isDev) {
+    log.info("Skipping update check in dev mode");
+    return { success: false, message: "Update check disabled in dev mode" };
+  }
+  try {
+    await autoUpdater.checkForUpdates();
+    return { success: true };
+  } catch (error) {
+    log.error("Error checking for updates:", error);
+    return { success: false, message: (error as Error).message };
+  }
+});
+
+ipcMain.handle("download-update", async () => {
+  if (isDev) {
+    return { success: false, message: "Download disabled in dev mode" };
+  }
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (error) {
+    log.error("Error downloading update:", error);
+    return { success: false, message: (error as Error).message };
+  }
+});
+
+ipcMain.handle("install-update", async () => {
+  if (isDev) {
+    return { success: false, message: "Install disabled in dev mode" };
+  }
+  try {
+    autoUpdater.quitAndInstall();
+    return { success: true };
+  } catch (error) {
+    log.error("Error installing update:", error);
+    return { success: false, message: (error as Error).message };
+  }
 });

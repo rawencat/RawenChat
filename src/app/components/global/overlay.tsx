@@ -17,11 +17,11 @@ export default function ModalOverlay({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+      className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 animate-fade-in"
       onClick={handleOverlayClick}
     >
       <div
-        className="bg-[#18181b] border border-[#3f3f46] p-8 rounded-lg shadow-2xl max-w-md w-full"
+        className="amoled-card p-8 max-w-md w-full animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

@@ -10,7 +10,7 @@ wss.on('connection', (ws) => {
       const data = JSON.parse(message.toString());
       if (data.type === 'UPDATE_THRESHOLD') {
         wss.clients.forEach((client) => {
-          if (client.readyState === 1 /* OPEN */) {
+          if (client.readyState === 1 ) {
             client.send(JSON.stringify({ type: 'NEW_THRESHOLD', value: data.value }));
           }
         });

@@ -1,5 +1,3 @@
-// Configuración simple para Electron
-
 export const WINDOW_CONFIG = {
   WIDTH: 1280,
   HEIGHT: 800,
@@ -10,7 +8,6 @@ export const WINDOW_CONFIG = {
 
 export const DEV_URL = "http://localhost:3000";
 
-// Mapeo de teclas para Windows (WScript.SendKeys)
 export const WIN_KEYS: Record<string, string> = {
   space: " ",
   enter: "{ENTER}",
@@ -35,7 +32,6 @@ export const WIN_KEYS: Record<string, string> = {
   f12: "{F12}",
 };
 
-// Mapeo de teclas para macOS (key codes)
 export const MAC_KEYS: Record<string, number> = {
   space: 49,
   enter: 36,

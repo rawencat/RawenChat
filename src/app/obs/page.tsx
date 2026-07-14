@@ -1,11 +1,17 @@
 "use client";
-import MessagesRender from "@/app/components/chat/messagesRender";
-import { useEffect, Suspense } from "react";
+
+import { Suspense, useEffect, useRef, useState } from "react";
 import * as tmi from "tmi.js";
-import { useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { getKickChatroomId, getKickWebSocketUrl } from "@/utils/kick";
-import { getPlatformDisplayName, type ChatPlatform } from "@/utils/platform";
+import { type ChatPlatform } from "@/utils/platform";
+import { STORAGE_KEYS } from "@/constants/config";
+import { getFromStorage } from "@/utils/storage";
+import {
+  useCustomMessageComponent,
+  DEFAULT_COMPONENT_CODE,
+} from "@/app/hooks/useCustomMessageComponent";
+import { TailwindRuntimeLoader } from "@/app/components/shared/TailwindRuntimeLoader";
 
 interface MessageProps {
   timestamp: string;
@@ -14,164 +20,178 @@ interface MessageProps {
   color?: string | undefined;
 }
 
-function ObsPageContent() {
-  const [Messages, SetMessages] = useState<MessageProps[]>([]);
-  const [mounted, setMounted] = useState(false);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const searchParams = useSearchParams();
+const REMOTE_COMPONENT_URL = "http://127.0.0.1:3003/obs-component";
+const REMOTE_COMPONENT_POLL_MS = 2000;
 
-  const scrollToBottom = () => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
-    }
-  };
+
+function useRemoteComponentCode(): string {
+  const [code, setCode] = useState("");
 
   useEffect(() => {
-    scrollToBottom();
-  }, [Messages]);
+    let active = true;
 
-  useEffect(() => {
-    setMounted(true);
+    const fetchRemoteCode = async (): Promise<string | null> => {
+      try {
+        const response = await fetch(REMOTE_COMPONENT_URL);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data?.componentCode || null;
+      } catch {
+        return null;
+      }
+    };
+
+    const refresh = async () => {
+      const remote = await fetchRemoteCode();
+      if (!active) return;
+      if (remote) {
+        setCode(remote);
+      } else {
+        setCode((prev) => prev || getFromStorage<string>(STORAGE_KEYS.OBS_CSS) || DEFAULT_COMPONENT_CODE);
+      }
+    };
+
+    refresh();
+    const intervalId = setInterval(refresh, REMOTE_COMPONENT_POLL_MS);
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
+  return code;
+}
+
+function useTwitchChat(channel: string | null, onMessage: (msg: MessageProps) => void) {
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
+
   useEffect(() => {
-    if (!mounted) return;
+    if (!channel) return;
 
-    const channel = searchParams.get("channel");
-    const platform = (
-      searchParams.get("platform") || "twitch"
-    ).toLowerCase() as ChatPlatform;
-
-    if (!channel) {
-      console.error("No channel parameter provided. Use ?channel=channelname");
-      return;
-    }
-
-    console.log(`Connecting to ${platform} channel: ${channel}`);
-
-    if (platform === "kick") {
-      let ws: WebSocket | null = null;
-      let active = true;
-
-      getKickChatroomId(channel)
-        .then((chatroomId) => {
-          if (!active) return;
-          ws = new WebSocket(getKickWebSocketUrl());
-
-          ws.onopen = () => {
-            ws?.send(
-              JSON.stringify({
-                event: "pusher:subscribe",
-                data: {
-                  auth: "", // Public chatrooms do not require signed auth tokens.
-                  channel: `chatrooms.${chatroomId}.v2`,
-                },
-              }),
-            );
-          };
-
-          ws.onmessage = (event) => {
-            try {
-              const payload = JSON.parse(event.data as string) as {
-                event?: string;
-                data?: unknown;
-              };
-              if (payload.event !== "App\\Events\\ChatMessageEvent") return;
-              const parsedData =
-                typeof payload.data === "string"
-                  ? JSON.parse(payload.data)
-                  : payload.data;
-              const data = parsedData as {
-                content?: string;
-                sender?: { username?: string; slug?: string };
-              };
-              if (!data?.content) return;
-
-              const newMessage: MessageProps = {
-                timestamp: new Date().toISOString(),
-                username:
-                  data.sender?.username || data.sender?.slug || "kick_user",
-                message: data.content,
-              };
-
-              SetMessages((prevMessages) => [...prevMessages, newMessage]);
-            } catch (err) {
-              console.error("Failed to parse Kick WebSocket message:", err);
-            }
-          };
-        })
-        .catch((err) => {
-          console.error("Failed to connect Kick:", err);
-        });
-
-      return () => {
-        active = false;
-        ws?.close();
-      };
-    }
-
-    const client = new tmi.Client({
-      channels: [channel.toLowerCase()],
-    });
+    const client = new tmi.Client({ channels: [channel.toLowerCase()] });
 
     client
       .connect()
-      .then(() => {
-        console.log(`Connected to channel: ${channel}`);
-      })
-      .catch((err) => {
-        console.error("Failed to connect:", err);
-      });
+      .then(() => console.log(`Connected to Twitch channel: ${channel}`))
+      .catch((err) => console.error("Failed to connect to Twitch:", err));
 
     client.on("message", (_channel, tags, message, self) => {
       if (self) return;
-
-      const newMessage: MessageProps = {
+      onMessageRef.current({
         timestamp: new Date().toISOString(),
         username: tags.username,
-        message: message,
+        message,
         color: tags.color || undefined,
-      };
-
-      SetMessages((prevMessages) => [...prevMessages, newMessage]);
+      });
     });
 
     return () => {
       client.disconnect();
     };
-  }, [mounted, searchParams]);
+  }, [channel]);
+}
+
+function useKickChat(channel: string | null, onMessage: (msg: MessageProps) => void) {
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
+
+  useEffect(() => {
+    if (!channel) return;
+
+    let ws: WebSocket | null = null;
+    let active = true;
+
+    getKickChatroomId(channel)
+      .then((chatroomId) => {
+        if (!active) return;
+        ws = new WebSocket(getKickWebSocketUrl());
+
+        ws.onopen = () => {
+          ws?.send(
+            JSON.stringify({
+              event: "pusher:subscribe",
+              data: { auth: "", channel: `chatrooms.${chatroomId}.v2` },
+            })
+          );
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data as string) as {
+              event?: string;
+              data?: unknown;
+            };
+            if (payload.event !== "App\\Events\\ChatMessageEvent") return;
+
+            const parsedData =
+              typeof payload.data === "string" ? JSON.parse(payload.data) : payload.data;
+            const data = parsedData as {
+              content?: string;
+              sender?: { username?: string; slug?: string };
+            };
+            if (!data?.content) return;
+
+            onMessageRef.current({
+              timestamp: new Date().toISOString(),
+              username: data.sender?.username || data.sender?.slug || "kick_user",
+              message: data.content,
+            });
+          } catch (err) {
+            console.error("Failed to parse Kick WebSocket message:", err);
+          }
+        };
+      })
+      .catch((err) => console.error("Failed to connect to Kick:", err));
+
+    return () => {
+      active = false;
+      ws?.close();
+    };
+  }, [channel]);
+}
+
+function ObsPageContent() {
+  const [messages, setMessages] = useState<MessageProps[]>([]);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
 
   const channel = searchParams.get("channel");
-  const platform = (
-    searchParams.get("platform") || "twitch"
-  ).toLowerCase() as ChatPlatform;
+  const platform = (searchParams.get("platform") || "twitch").toLowerCase() as ChatPlatform;
+
+  useEffect(() => {
+    if (!channel) {
+      console.error("No channel parameter provided. Use ?channel=channelname");
+    }
+  }, [channel]);
+
+  const componentCode = useRemoteComponentCode();
+  const MessageComponent = useCustomMessageComponent(componentCode);
+
+  const appendMessage = (msg: MessageProps) => setMessages((prev) => [...prev, msg]);
+
+  useTwitchChat(platform === "twitch" ? channel : null, appendMessage);
+  useKickChat(platform === "kick" ? channel : null, appendMessage);
+
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   return (
-    <div
-      ref={messagesContainerRef}
-      className="messages-container h-screen overflow-y-auto bg-transparent"
-      style={{ scrollBehavior: "smooth" }}
-    >
-      {Messages.length > 0 ? (
-        Messages.map((msg) => (
-          <div key={`${msg.timestamp}-${msg.username}`} className="animate-plop">
-            <MessagesRender
-              ShowTime={false}
-              msg={msg}
-            />
-          </div>
-        ))
-      ) : (
-        <div className="flex items-center justify-center h-full">
-          <p className="text-gray-500 text-sm">
-            {channel
-              ? `Esperando mensajes en ${getPlatformDisplayName(platform)}: ${channel}...`
-              : "Esperando..."}
-          </p>
-        </div>
-      )}
-    </div>
+    <>
+      <TailwindRuntimeLoader />
+      <div
+        ref={messagesContainerRef}
+        className="messages-container h-screen overflow-y-auto bg-transparent hide-scrollbar"
+        style={{ scrollBehavior: "smooth" }}
+      >
+        {messages.map((msg) => (
+          <MessageComponent key={`${msg.timestamp}-${msg.username}`} msg={msg} />
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -179,7 +199,7 @@ export default function ObsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center h-screen text-gray-500">
+        <div className="flex items-center justify-center h-screen text-gray-400">
           Cargando...
         </div>
       }

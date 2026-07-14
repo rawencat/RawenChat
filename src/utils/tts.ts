@@ -1,23 +1,20 @@
 let currentAudio: HTMLAudioElement | null = null;
 
-/**
- * Check if running in Electron environment
- */
+
+
 function isElectron(): boolean {
   if (typeof window === "undefined") return false;
   return (window as any).electron?.isElectron === true;
 }
 
-/**
- * Get Electron API object with type safety
- */
+
+
 function getElectronAPI() {
   return (window as any).electron;
 }
 
-/**
- * Extract voice name from various EdgeTTS voice object formats
- */
+
+
 function extractVoiceName(voice: unknown): string | null {
   if (typeof voice === "string") {
     return voice;
@@ -44,9 +41,8 @@ function extractVoiceName(voice: unknown): string | null {
   return null;
 }
 
-/**
- * Normalize and deduplicate voices array from EdgeTTS
- */
+
+
 export function normalizeVoices(voices: unknown[]): string[] {
   const voiceSet = new Set<string>();
 
@@ -69,7 +65,7 @@ export function stopSpeaking(): void {
     currentAudio = null;
   }
 
-  // Also stop Electron audio if available
+  
   if (isElectron()) {
     const electron = getElectronAPI();
     if (electron?.stopSpeaking) {
@@ -164,10 +160,8 @@ function playAudio(
   }
 }
 
-/**
- * Fallback TTS via API endpoint (for web version - disabled in static export)
- * This is kept for reference but won't be used in production Electron app
- */
+
+
 function speakViaAPI(
   message: string,
   language: string,
@@ -181,7 +175,7 @@ function speakViaAPI(
 
 export async function getAvailableVoices(language: string): Promise<string[]> {
   try {
-    // Electron IPC only - this is a serverless desktop app
+    
     if (isElectron()) {
       const electron = getElectronAPI();
       if (electron?.getVoices) {
@@ -196,7 +190,7 @@ export async function getAvailableVoices(language: string): Promise<string[]> {
       }
     }
 
-    // No API fallback - this is a static export, not a server app
+    
     console.warn("getAvailableVoices: Not in Electron environment");
     return [];
   } catch (error) {

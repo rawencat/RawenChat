@@ -30,7 +30,7 @@ export default function AvatarPage() {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-transparent overflow-hidden">
       <div className="relative w-screen h-screen">
-        {/* IDLE */}
+        {}
         <Image
           src={idleImg}
           alt="Idle"
@@ -41,7 +41,7 @@ export default function AvatarPage() {
             isActive ? 'opacity-0' : 'opacity-100'
           }`}
         />
-        {/* ACTIVE */}
+        {}
         <Image
           src={activeImg}
           alt="Active"

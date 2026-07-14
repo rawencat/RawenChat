@@ -15,15 +15,14 @@ interface UseChatConnectionOptions {
   commands: Command[];
   platform: ChatPlatform;
   onTtsMessage: (message: string) => void;
+  maxMessages?: number;
 }
 
 function runCommand(command: Command, username: string): void {
   const actionType = command.actionType || "key";
 
   if ((actionType === "key" || actionType === "both") && window.electron) {
-    window.electron
-      .pressKey(command.key)
-      .catch((err: unknown) => console.error("Error pressing key:", err));
+    window.electron.pressKey(command.key).catch(console.error);
   }
 
   if ((actionType === "sound" || actionType === "both") && command.soundFile) {
@@ -31,10 +30,10 @@ function runCommand(command: Command, username: string): void {
       const audio = new Audio(
         command.soundFile.startsWith("data:")
           ? command.soundFile
-          : `/${command.soundFile}`,
+          : `/${command.soundFile}`
       );
       audio.volume = 1;
-      audio.play().catch((err: unknown) => console.error("Audio error:", err));
+      audio.play().catch(console.error);
     } catch (err) {
       console.error(`Error running command for ${username}:`, err);
     }
@@ -46,13 +45,14 @@ export function useChatConnection({
   commands,
   platform,
   onTtsMessage,
+  maxMessages = 200,
 }: UseChatConnectionOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<MessageProps[]>([]);
+
   const commandsRef = useRef(commands);
-  const rateLimitersRef = useRef<Map<string, RateLimitManager<string>>>(
-    new Map(),
-  );
+  const lastSpeakerRef = useRef<string | null>(null);
+  const rateLimitersRef = useRef<Map<string, RateLimitManager<string>>>(new Map());
   const disconnectRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -62,84 +62,87 @@ export function useChatConnection({
   const handleIncomingMessage = useCallback(
     (incoming: IncomingChatMessage) => {
       const username = incoming.username || "Anónimo";
-      const normalizedUsername = username.toLowerCase();
-      const message: MessageProps = {
+      const rawMessage = incoming.message;
+      const trigger = rawMessage.trim().toLowerCase();
+
+      const command = commandsRef.current.find((cmd) => cmd.trigger === trigger);
+
+      const newMessage: MessageProps = {
         timestamp: new Date().toISOString(),
         username,
-        message: incoming.message,
+        message: rawMessage,
         color: incoming.color || getRandomColor(),
       };
 
-      setMessages((prevMessages) => [...prevMessages, message]);
-      onTtsMessage(`${username} dice: ${incoming.message}`);
+      setMessages((prev) => {
+        const updated = [...prev, newMessage];
+        return updated.length > maxMessages ? updated.slice(-maxMessages) : updated;
+      });
 
-      const trigger = incoming.message.trim().toLowerCase();
-      const command = commandsRef.current.find((cmd) => cmd.trigger === trigger);
-      if (!command || typeof window === "undefined") return;
+      if (command) {
+        const limitKey = command.rateLimitType === "global" ? "global" : username.toLowerCase();
+        let limiter = rateLimitersRef.current.get(command.trigger);
 
-      let limiter = rateLimitersRef.current.get(command.trigger);
-      if (!limiter) {
-        limiter = new RateLimitManager(
-          command.timeout || DEFAULTS.COMMAND_TIMEOUT_MS,
-          1,
-        );
-        rateLimitersRef.current.set(command.trigger, limiter);
+        if (!limiter) {
+          limiter = new RateLimitManager(
+            command.timeout || DEFAULTS.COMMAND_TIMEOUT_MS,
+            1
+          );
+          rateLimitersRef.current.set(command.trigger, limiter);
+        }
+
+        const rateLimit = limiter.acquire(limitKey);
+        if (!rateLimit.limited) {
+          rateLimit.consume();
+          runCommand(command, username);
+        }
+        return; 
       }
 
-      const limitKey =
-        command.rateLimitType === "global" ? "global" : normalizedUsername;
-      const rateLimit = limiter.acquire(limitKey);
-      if (rateLimit.limited) return;
+      
+      const shouldSayName = lastSpeakerRef.current !== username;
 
-      rateLimit.consume();
-      runCommand(command, username);
+      if (shouldSayName) {
+        onTtsMessage(`${username} dice: ${rawMessage}`);
+        lastSpeakerRef.current = username;
+      } else {
+        onTtsMessage(rawMessage);
+      }
     },
-    [onTtsMessage],
+    [onTtsMessage, maxMessages],
   );
 
   const disconnect = useCallback(() => {
-    if (disconnectRef.current) {
-      disconnectRef.current();
-      disconnectRef.current = null;
-    }
+    disconnectRef.current?.();
+    disconnectRef.current = null;
     setIsConnected(false);
     setMessages([]);
+    lastSpeakerRef.current = null;
+    rateLimitersRef.current.clear();
   }, []);
+
+  
 
   useEffect(() => {
     if (!channel) return;
-
-    setIsConnected(false);
-    setMessages([]);
-    rateLimitersRef.current.clear();
+    disconnect();
 
     if (platform === "twitch") {
       const client = new tmi.Client({ channels: [channel.toLowerCase()] });
 
-      disconnectRef.current = () => {
-        if (client.readyState() === "OPEN") {
-          client
-            .disconnect()
-            .catch((err) => console.error("Failed to disconnect:", err));
-        }
-      };
+      disconnectRef.current = () => client.disconnect().catch(console.error);
 
-      client
-        .connect()
-        .then(() => setIsConnected(true))
-        .catch((err) => {
-          console.error("Failed to connect Twitch:", err);
-          setIsConnected(false);
-        });
+      client.connect().then(() => setIsConnected(true)).catch(console.error);
 
       client.on("message", (_ch, tags, message) => {
         handleIncomingMessage({
-          username: tags.username || undefined,
+          username: tags.username,
           message,
-          color: tags.color || undefined,
+          color: tags.color,
         });
       });
     } else {
+      
       let ws: WebSocket | null = null;
       let isActive = true;
 
@@ -154,67 +157,41 @@ export function useChatConnection({
           ws = new WebSocket(getKickWebSocketUrl());
 
           ws.onopen = () => {
-            ws?.send(
-              JSON.stringify({
-                event: "pusher:subscribe",
-                data: {
-                  auth: "",
-                  channel: `chatrooms.${chatroomId}.v2`,
-                },
-              }),
-            );
+            ws?.send(JSON.stringify({
+              event: "pusher:subscribe",
+              data: { auth: "", channel: `chatrooms.${chatroomId}.v2` },
+            }));
             setIsConnected(true);
           };
 
           ws.onmessage = (event) => {
             try {
-              const payload = JSON.parse(event.data as string) as {
-                event?: string;
-                data?: unknown;
-              };
+              const payload = JSON.parse(event.data as string);
               if (payload.event !== "App\\Events\\ChatMessageEvent") return;
 
-              const parsedData =
-                typeof payload.data === "string"
-                  ? JSON.parse(payload.data)
-                  : payload.data;
-              const data = parsedData as {
-                content?: string;
-                sender?: { username?: string; slug?: string };
-              };
+              const data = typeof payload.data === "string" 
+                ? JSON.parse(payload.data) 
+                : payload.data;
 
               if (!data?.content) return;
 
               handleIncomingMessage({
-                username:
-                  data.sender?.username || data.sender?.slug || "kick_user",
+                username: data.sender?.username || data.sender?.slug || "kick_user",
                 message: data.content,
               });
             } catch (err) {
-              console.error("Failed to parse Kick WebSocket message:", err);
+              console.error("Kick parse error:", err);
             }
           };
 
-          ws.onerror = (err) => {
-            console.error("Kick websocket error:", err);
-            setIsConnected(false);
-          };
-
+          ws.onerror = () => setIsConnected(false);
           ws.onclose = () => setIsConnected(false);
         })
-        .catch((err) => {
-          console.error("Failed to connect Kick:", err);
-          setIsConnected(false);
-        });
+        .catch(console.error);
     }
 
     return disconnect;
   }, [channel, platform, handleIncomingMessage, disconnect]);
 
-  return {
-    disconnect,
-    isConnected,
-    messages,
-  };
+  return { disconnect, isConnected, messages };
 }
-

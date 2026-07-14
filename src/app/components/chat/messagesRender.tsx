@@ -12,20 +12,27 @@ interface MessageProps {
 
 export default function MessagesRender({ msg, ShowTime = true }: MessageProps) {
   return (
-    <div className="px-4">
-      <div className="bg-[#27272a] border border-[#3f3f46] p-4 rounded-lg my-2 items-center inline-flex gap-2 hover:bg-[#2f2f33] transition-colors">
-        {ShowTime && (
-          <span className="text-gray-500 text-xs">
-            {new Date(msg.timestamp).toLocaleTimeString("es-MX", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+    <div className="animate-message-in px-4 py-2">
+      <div className="message-container px-5 py-4 bg-[rgba(0,0,0,0.5)] rounded-2xl backdrop-blur-xl border border-white/15 shadow-lg">
+        <div className="flex items-center gap-4">
+          {ShowTime && (
+            <span className="text-[rgba(255,255,255,0.5)] text-xs font-mono shrink-0 tabular-nums bg-white/5 px-2 py-1 rounded-lg">
+              {new Date(msg.timestamp).toLocaleTimeString("es-MX", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+          <span
+            className="username font-extrabold text-lg"
+            style={{ color: msg.color || "#ffb07a" }}
+          >
+            {msg.username}
           </span>
-        )}
-        <span className="font-bold" style={{ color: msg.color || "#60a5fa" }}>
-          {msg.username}:
-        </span>
-        <p className="text-sm break-words text-gray-200">{msg.message}</p>
+        </div>
+        <p className="message-text text-white/95 text-base break-words leading-relaxed mt-2">
+          {msg.message}
+        </p>
       </div>
     </div>
   );

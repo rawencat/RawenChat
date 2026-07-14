@@ -1,6 +1,6 @@
 {
   "name": "twitch-rawen",
-  "version": "0.1.0",
+  "version": "2.2.0",
   "private": true,
   "main": "electron-dist/main.js",
   "scripts": {
@@ -9,6 +9,7 @@
     "electron:dev": "concurrently \"tsc -p electron/tsconfig.json --watch\" \"next dev --turbopack\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:compile": "tsc -p electron/tsconfig.json",
     "electron:build": "next build && tsc -p electron/tsconfig.json && electron-builder",
+    "release": "node scripts/release.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -38,13 +39,22 @@
     "linux": {
       "target": "AppImage",
       "icon": "public/logon"
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://cdn.rawencat.tech/releases"
     }
   },
   "dependencies": {
     "@andresaya/edge-tts": "^1.8.0",
+    "@babel/standalone": "^8.0.4",
     "@fluentui/react-icons": "^2.0.324",
     "@lobehub/fluent-emoji": "^2.0.0",
+    "@monaco-editor/react": "^4.7.0",
     "@sapphire/ratelimits": "^2.4.11",
+    "@tailwindcss/browser": "^4.3.2",
+    "electron-log": "^5.4.4",
+    "electron-updater": "^6.8.9",
     "next": "16.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -54,17 +64,22 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/babel__standalone": "^7.1.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/tmi.js": "^1.8.6",
     "@types/ws": "^8.18.1",
+    "chalk": "^4.1.2",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
+    "dotenv": "^17.4.2",
     "electron": "^31.6.0",
     "electron-builder": "^25.1.8",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
+    "inquirer": "^8.2.7",
+    "strip-comments": "^2.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wait-on": "^8.0.3"

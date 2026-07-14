@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("electron", {
-  // Window controls
+  
   pressKey: (key: string): Promise<void> =>
     ipcRenderer.invoke("press-key", key),
   minimize: (): Promise<void> =>
@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld("electron", {
   close: (): Promise<void> =>
     ipcRenderer.invoke("window-close"),
   
-  // TTS serverless functions
+  
   getVoices: (language: string): Promise<string[]> =>
     ipcRenderer.invoke("get-voices", language),
   speakMessage: (text: string, language: string, voice: string): Promise<string> =>
@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld("electron", {
   stopSpeaking: (): Promise<void> =>
     ipcRenderer.invoke("stop-speaking"),
 
-  // Avatar overlay persistence
+  
   saveAvatarImage: (fileName: string, dataUrl: string): Promise<{ url: string; fileName: string }> =>
     ipcRenderer.invoke("save-avatar-image", { fileName, dataUrl }),
   saveAvatarSettings: (settings: unknown): Promise<void> =>
@@ -27,9 +27,28 @@ contextBridge.exposeInMainWorld("electron", {
   getAvatarSettings: (): Promise<unknown | null> =>
     ipcRenderer.invoke("get-avatar-settings"),
   
-  // Diagnostics
+  
+  saveObsComponent: (componentCode: string): Promise<void> =>
+    ipcRenderer.invoke("save-obs-component", componentCode),
+  getObsComponent: (): Promise<string | null> =>
+    ipcRenderer.invoke("get-obs-component"),
+  
+  
   getDiagnostics: (): Promise<{ isElectron: true; version: string }> =>
     ipcRenderer.invoke("get-diagnostics"),
+  
+  
+  checkForUpdates: (): Promise<{ success: boolean; message?: string }> =>
+    ipcRenderer.invoke("check-for-updates"),
+  downloadUpdate: (): Promise<{ success: boolean; message?: string }> =>
+    ipcRenderer.invoke("download-update"),
+  installUpdate: (): Promise<{ success: boolean; message?: string }> =>
+    ipcRenderer.invoke("install-update"),
+  onUpdateStatus: (callback: (status: string, data?: unknown) => void) => {
+    const listener = (_event: unknown, status: string, data?: unknown) => callback(status, data);
+    ipcRenderer.on("update-status", listener);
+    return () => ipcRenderer.off("update-status", listener);
+  },
   
   isElectron: true,
 });

@@ -7,14 +7,14 @@ interface ToastProps {
 
 export default function Toast({ message, type = "success" }: ToastProps) {
   const typeStyles = {
-    success: "bg-green-600",
-    error: "bg-red-600",
-    info: "bg-blue-600",
+    success: "bg-[var(--success)] text-black",
+    error: "bg-[var(--error)] text-white",
+    info: "bg-[var(--accent)] text-[var(--accent-text)]",
   };
 
   return (
     <div
-      className={`fixed top-20 right-4 ${typeStyles[type]} text-white px-4 py-3 rounded-lg shadow-lg animate-slide-in z-50`}
+      className={`fixed bottom-5 right-5 ${typeStyles[type]} px-4 py-3 rounded-xl text-sm font-medium shadow-lg animate-slide-in z-50`}
     >
       {message}
     </div>

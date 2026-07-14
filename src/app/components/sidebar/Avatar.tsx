@@ -1,12 +1,11 @@
-"use client";
-
-import { ChangeEvent, ReactNode, useEffect, useState } from "react";
-import Image from "next/image";
+'use client';
+import Image from 'next/image';
+import { ChangeEvent, ReactNode, useEffect, useState } from 'react';
 import {
   AVATAR_DEFAULTS,
   AVATAR_EVENTS,
   type AvatarSettings,
-} from "@/constants/avatar";
+} from '@/constants/avatar';
 import {
   persistAvatarSettingsForOverlay,
   readAvatarSettings,
@@ -14,8 +13,16 @@ import {
   readAvatarThreshold,
   sendAvatarTalkingState,
   updateAvatarSettings,
-} from "@/utils/avatar";
-import type { AvatarStateDetail } from "../../hooks/useAvatarAudioEngine";
+} from '@/utils/avatar';
+import type { AvatarStateDetail } from '../../hooks/useAvatarAudioEngine';
+import { 
+  WindowDevTools20Regular, 
+  Mic20Regular, 
+  Image20Regular,
+  PlayCircle20Regular,
+  PauseCircle20Regular
+} from '@fluentui/react-icons';
+import Dropdown from '../global/Dropdown';
 
 interface AudioDevice {
   deviceId: string;
@@ -24,13 +31,17 @@ interface AudioDevice {
 
 interface SettingCardProps {
   title: string;
+  icon?: ReactNode;
   children: ReactNode;
 }
 
-function SettingCard({ title, children }: SettingCardProps) {
+function SettingCard({ title, icon, children }: SettingCardProps) {
   return (
-    <section className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg shadow-sm">
-      <h2 className="text-lg font-bold mb-4">{title}</h2>
+    <section className="p-6 amoled-card rounded-2xl">
+      <div className="flex items-center gap-3 mb-5">
+        {icon && <div className="text-[var(--accent)]">{icon}</div>}
+        <h2 className="text-lg font-semibold text-white">{title}</h2>
+      </div>
       {children}
     </section>
   );
@@ -38,14 +49,17 @@ function SettingCard({ title, children }: SettingCardProps) {
 
 function VolumeMeter({ volume }: { volume: number }) {
   return (
-    <div className="mb-4">
-      <div className="flex justify-between text-sm text-zinc-400 mb-1">
-        <span>Nivel de Entrada</span>
-        <span className="font-mono">{volume}%</span>
+    <div className="mb-6">
+      <div className="flex justify-between text-sm text-[var(--text-secondary)] mb-3">
+        <span className="flex items-center gap-2">
+          <Mic20Regular className="w-4 h-4" />
+          Nivel de Entrada
+        </span>
+        <span className="font-mono text-[var(--accent)] font-bold text-lg">{volume}%</span>
       </div>
-      <div className="h-3 bg-zinc-800 rounded-full overflow-hidden p-0.5">
+      <div className="h-4 bg-[var(--elevated)] rounded-full overflow-hidden border border-[var(--border)]">
         <div
-          className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-75"
+          className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--success)] rounded-full transition-all duration-75"
           style={{ width: `${volume}%` }}
         />
       </div>
@@ -68,18 +82,21 @@ function ImageUrlInput({
   onChange,
   onFileChange,
 }: ImageUrlInputProps) {
-  const isLocalFile = value.startsWith("data:");
+  const isLocalFile = value.startsWith('data:');
 
   return (
-    <label className="block">
-      <span className="text-sm text-zinc-400 block mb-1">{label}</span>
-      <div className="flex gap-2">
+    <div className="space-y-3">
+      <label className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2">
+        <Image20Regular className="w-4 h-4" />
+        {label}
+      </label>
+      <div className="flex gap-3 flex-wrap">
         <input
           type="url"
-          value={isLocalFile ? "" : value}
-          placeholder={isLocalFile ? "Archivo local guardado" : "https://..."}
+          value={isLocalFile ? '' : value}
+          placeholder={isLocalFile ? 'Archivo local guardado' : 'https://ejemplo.com/avatar.png'}
           onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 p-2.5 bg-zinc-800 border border-zinc-700 rounded-lg font-mono text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-zinc-300"
+          className="amoled-input min-w-0 flex-1 font-mono text-sm"
         />
         <span className="relative shrink-0">
           <input
@@ -89,21 +106,21 @@ function ImageUrlInput({
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
               if (file) onFileChange(file);
-              event.currentTarget.value = "";
+              event.currentTarget.value = '';
             }}
             className="absolute inset-0 opacity-0 cursor-pointer"
           />
-          <span className="block px-3 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs font-medium text-white transition-colors">
-            Archivo
+          <span className="block px-5 py-3 amoled-button text-sm font-medium">
+            Subir Imagen
           </span>
         </span>
       </div>
       {fileName && (
-        <span className="mt-1 block text-xs text-blue-300 truncate">
-          {fileName}
+        <span className="text-sm text-[var(--accent)] flex items-center gap-2">
+          ✓ {fileName}
         </span>
       )}
-    </label>
+    </div>
   );
 }
 
@@ -115,14 +132,15 @@ interface AvatarPreviewProps {
 
 function AvatarPreview({ idleImg, activeImg, isTalking }: AvatarPreviewProps) {
   return (
-    <div className="relative w-64 h-64 my-auto bg-zinc-950 border border-zinc-800 rounded-lg flex items-center justify-center overflow-hidden">
+    <div className="relative w-full aspect-square bg-gradient-to-br from-[var(--elevated)] to-black border-2 border-[var(--border)] rounded-3xl flex items-center justify-center overflow-hidden shadow-2xl">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,176,122,0.1)_0%,_transparent_70%)] pointer-events-none" />
       <Image
         src={idleImg}
         alt="Preview Idle"
         fill
         unoptimized
-        className={`object-contain transition-opacity duration-75 p-4 ${
-          isTalking ? "opacity-0" : "opacity-100"
+        className={`object-contain transition-opacity duration-200 p-6 ${
+          isTalking ? 'opacity-0' : 'opacity-100'
         }`}
       />
       <Image
@@ -130,17 +148,21 @@ function AvatarPreview({ idleImg, activeImg, isTalking }: AvatarPreviewProps) {
         alt="Preview Active"
         fill
         unoptimized
-        className={`object-contain transition-opacity duration-75 p-4 ${
-          isTalking ? "opacity-100" : "opacity-0"
+        className={`object-contain transition-opacity duration-200 p-6 ${
+          isTalking ? 'opacity-100' : 'opacity-0'
         }`}
       />
     </div>
   );
 }
 
-export default function AvatarConfigPage() {
+interface AvatarConfigPageProps {
+  setToastMessage: (msg: string) => void;
+}
+
+export default function AvatarConfigPage({ setToastMessage }: AvatarConfigPageProps) {
   const [devices, setDevices] = useState<AudioDevice[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState('');
   const [settings, setSettings] =
     useState<AvatarSettings>(readAvatarSettings);
   const [avatarThreshold, setAvatarThreshold] = useState<number>(
@@ -159,15 +181,15 @@ export default function AvatarConfigPage() {
     setSettings(savedSettings);
     void persistAvatarSettingsForOverlay(savedSettings);
     setAvatarThreshold(readAvatarThreshold());
-    setIdleImg(readAvatarImage("idle"));
-    setActiveImg(readAvatarImage("active"));
+    setIdleImg(readAvatarImage('idle'));
+    setActiveImg(readAvatarImage('active'));
 
     async function loadMicrophones() {
       try {
         await navigator.mediaDevices.getUserMedia({ audio: true });
         const allDevices = await navigator.mediaDevices.enumerateDevices();
         const audioInputs = allDevices
-          .filter((device) => device.kind === "audioinput")
+          .filter((device) => device.kind === 'audioinput')
           .map((device) => ({
             deviceId: device.deviceId,
             label:
@@ -180,10 +202,10 @@ export default function AvatarConfigPage() {
           savedSettings.micId &&
             audioInputs.some((device) => device.deviceId === savedSettings.micId)
             ? savedSettings.micId
-            : audioInputs[0]?.deviceId || "",
+            : audioInputs[0]?.deviceId || '',
         );
       } catch (err) {
-        console.error("Error listando dispositivos de audio:", err);
+        console.error('Error listando dispositivos de audio:', err);
       }
     }
 
@@ -225,26 +247,26 @@ export default function AvatarConfigPage() {
     void persistAvatarSettingsForOverlay(nextSettings);
   };
 
-  const handleImgChange = (type: "idle" | "active", url: string) => {
+  const handleImgChange = (type: 'idle' | 'active', url: string) => {
     const updates =
-      type === "idle"
-        ? { idleImage: url, idleImageName: "" }
-        : { activeImage: url, activeImageName: "" };
+      type === 'idle'
+        ? { idleImage: url, idleImageName: '' }
+        : { activeImage: url, activeImageName: '' };
     const nextSettings = updateAvatarSettings(updates);
     setSettings(nextSettings);
     void persistAvatarSettingsForOverlay(nextSettings);
-    if (type === "idle") {
+    if (type === 'idle') {
       setIdleImg(url);
     } else {
       setActiveImg(url);
     }
   };
 
-  const handleImageFileChange = (type: "idle" | "active", file: File) => {
+  const handleImageFileChange = (type: 'idle' | 'active', file: File) => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       const dataUrl = event.target?.result;
-      if (typeof dataUrl !== "string") return;
+      if (typeof dataUrl !== 'string') return;
 
       const savedImage = await window.electron?.saveAvatarImage(
         file.name,
@@ -253,14 +275,14 @@ export default function AvatarConfigPage() {
       const imageUrl = savedImage?.url || dataUrl;
       const imageName = savedImage?.fileName || file.name;
       const updates =
-        type === "idle"
+        type === 'idle'
           ? { idleImage: imageUrl, idleImageName: imageName }
           : { activeImage: imageUrl, activeImageName: imageName };
       const nextSettings = updateAvatarSettings(updates);
       setSettings(nextSettings);
       await persistAvatarSettingsForOverlay(nextSettings);
 
-      if (type === "idle") {
+      if (type === 'idle') {
         setIdleImg(imageUrl);
       } else {
         setActiveImg(imageUrl);
@@ -269,57 +291,48 @@ export default function AvatarConfigPage() {
     reader.readAsDataURL(file);
   };
 
+  const copyAvatarUrl = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    navigator.clipboard.writeText(`${origin}/avatar`);
+    setCopiedAvatarUrl(true);
+    setToastMessage('URL de Avatar Overlay copiado');
+    setTimeout(() => setCopiedAvatarUrl(false), 2000);
+  };
+
   const statusClass = isTalking
-    ? "bg-green-500/20 text-green-400"
-    : "bg-zinc-800 text-zinc-400";
+    ? 'bg-[var(--success-muted)] text-[var(--success)]'
+    : 'bg-[var(--elevated)] text-[var(--text-secondary)]';
 
   return (
-    <div className="h-full overflow-y-auto rawen-scrollbar bg-gradient-to-br from-[#0f0f10] via-blue-950/5 to-[#0f0f10]">
-      <div className="p-8 max-w-6xl mx-auto text-white">
-        <h1 className="text-3xl font-extrabold mb-2 tracking-tight">
-          Configuración del Avatar Reactivo
-        </h1>
-        <p className="text-zinc-400 mb-8">
-          Administra el comportamiento de tu overlay para transmisiones en OBS
-          Studio.
-        </p>
+    <div className="h-full overflow-y-auto rawen-scrollbar">
+      <div className="p-6">
+        {}
+        <div className="amoled-card p-6 mb-6 flex items-center justify-between gap-4 rounded-2xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[var(--accent-muted)] border border-[var(--accent-border)] rounded-2xl flex items-center justify-center">
+              <WindowDevTools20Regular className="w-6 h-6 text-[var(--accent)]" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-white">Overlay de Avatar para OBS</h3>
+              <p className="text-sm text-[var(--text-muted)]">Copia el enlace para usarlo en tu streaming</p>
+            </div>
+          </div>
+          <button onClick={copyAvatarUrl} className="amoled-button text-sm px-6 py-3 font-medium">
+            {copiedAvatarUrl ? '¡Copiado!' : 'Copiar Enlace'}
+          </button>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <SettingCard title="Enlace del Overlay">
-              <p className="text-sm text-zinc-400 mb-4">
-                Copia este enlace para agregarlo como fuente de navegador en tu software de transmisión (OBS Studio, Streamlabs, etc.).
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={typeof window !== "undefined" ? `${window.location.origin}/avatar` : "http://localhost:3000/avatar"}
-                  className="min-w-0 flex-1 p-2.5 bg-zinc-800 border border-zinc-700 rounded-lg font-mono text-xs text-zinc-400 select-all focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
-                    navigator.clipboard.writeText(`${origin}/avatar`);
-                    setCopiedAvatarUrl(true);
-                    setTimeout(() => setCopiedAvatarUrl(false), 2000);
-                  }}
-                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs font-medium text-white transition-colors cursor-pointer shrink-0"
-                >
-                  {copiedAvatarUrl ? "¡Copiado!" : "Copiar Enlace"}
-                </button>
-              </div>
-            </SettingCard>
-
-            <SettingCard title="Fuente de Audio">
-              <label className="text-sm text-zinc-400 block mb-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {}
+          <div className="space-y-6">
+            <SettingCard title="Fuente de Audio" icon={<Mic20Regular className="w-5 h-5" />}>
+              <label className="text-sm text-[var(--text-secondary)] block mb-3 font-medium">
                 Selecciona tu micrófono principal:
               </label>
               <select
                 value={selectedDevice}
                 onChange={handleMicChange}
-                className="w-full p-3 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-sm"
+                className="amoled-input w-full text-sm"
               >
                 {devices.map((device) => (
                   <option key={device.deviceId} value={device.deviceId}>
@@ -329,12 +342,12 @@ export default function AvatarConfigPage() {
               </select>
             </SettingCard>
 
-            <SettingCard title="Umbral de Activación">
+            <SettingCard title="Umbral de Activación" icon={isTalking ? <PlayCircle20Regular className="w-5 h-5" /> : <PauseCircle20Regular className="w-5 h-5" />}>
               <VolumeMeter volume={currentVolumePercent} />
               <div>
-                <div className="flex justify-between text-sm text-zinc-400 mb-1">
-                  <span>Sensibilidad</span>
-                  <span className="font-mono text-blue-400 font-bold">
+                <div className="flex justify-between text-sm text-[var(--text-secondary)] mb-3">
+                  <span className="font-medium">Sensibilidad</span>
+                  <span className="font-mono text-[var(--accent)] font-bold text-lg">
                     {avatarThreshold}%
                   </span>
                 </div>
@@ -344,40 +357,40 @@ export default function AvatarConfigPage() {
                   max="100"
                   value={avatarThreshold}
                   onChange={handleSliderChange}
-                  className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-3 bg-[var(--elevated)] rounded-full appearance-none cursor-pointer accent-[var(--accent)]"
                 />
               </div>
             </SettingCard>
 
-            <SettingCard title="Enlaces de los Estados">
-              <div className="space-y-4">
+            <SettingCard title="Imágenes del Avatar" icon={<Image20Regular className="w-5 h-5" />}>
+              <div className="space-y-8">
                 <ImageUrlInput
                   label="Imagen En Espera (Idle):"
                   value={idleImg}
                   fileName={settings.idleImageName}
-                  onChange={(url) => handleImgChange("idle", url)}
-                  onFileChange={(file) => handleImageFileChange("idle", file)}
+                  onChange={(url) => handleImgChange('idle', url)}
+                  onFileChange={(file) => handleImageFileChange('idle', file)}
                 />
                 <ImageUrlInput
                   label="Imagen Hablando (Active):"
                   value={activeImg}
                   fileName={settings.activeImageName}
-                  onChange={(url) => handleImgChange("active", url)}
-                  onFileChange={(file) =>
-                    handleImageFileChange("active", file)
-                  }
+                  onChange={(url) => handleImgChange('active', url)}
+                  onFileChange={(file) => handleImageFileChange('active', file)}
                 />
               </div>
             </SettingCard>
           </div>
 
-          <aside className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg shadow-sm flex flex-col items-center justify-between min-h-[400px]">
-            <div className="w-full flex justify-between items-center border-b border-zinc-800 pb-3 mb-4">
-              <h2 className="text-lg font-bold">Vista Previa</h2>
+          {}
+          <div className="amoled-card p-6 flex flex-col rounded-2xl">
+            <div className="w-full flex justify-between items-center border-b border-[var(--border)] pb-5 mb-6">
+              <h2 className="text-lg font-semibold text-white">Vista Previa</h2>
               <span
-                className={`px-2 py-0.5 text-xs font-bold rounded-full ${statusClass}`}
+                className={`px-4 py-1.5 text-xs font-bold rounded-full ${statusClass} flex items-center gap-2`}
               >
-                {isTalking ? "HABLANDO" : "SILENCIO"}
+                {isTalking ? <PlayCircle20Regular className="w-3.5 h-3.5" /> : <PauseCircle20Regular className="w-3.5 h-3.5" />}
+                {isTalking ? 'HABLANDO' : 'SILENCIO'}
               </span>
             </div>
 
@@ -390,11 +403,11 @@ export default function AvatarConfigPage() {
             <button
               type="button"
               onClick={() => sendAvatarTalkingState(isTalking)}
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors mt-4"
+              className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors mt-6 text-center font-medium"
             >
               Reenviar estado actual
             </button>
-          </aside>
+          </div>
         </div>
       </div>
     </div>

@@ -38,27 +38,27 @@ export default function ControlBox() {
   };
 
   return (
-    <div className="flex items-center select-none -mr-4 -mt-3">
+    <div className="flex items-center select-none -mr-2">
       <button
         onClick={handleMinimize}
-        className="w-10 h-9 flex items-center justify-center hover:bg-[#3f3f46]/50 transition-colors cursor-pointer"
+        className="w-9 h-8 flex items-center justify-center hover:bg-[var(--elevated)] rounded-lg transition-colors cursor-pointer"
         title="Minimizar"
       >
-        <Subtract20Regular className="text-gray-400 w-4 h-4" />
+        <Subtract20Regular className="text-[var(--text-muted)] w-4 h-4" />
       </button>
       <button
         onClick={handleMaximize}
-        className="w-10 h-9 flex items-center justify-center hover:bg-[#3f3f46]/50 transition-colors cursor-pointer"
+        className="w-9 h-8 flex items-center justify-center hover:bg-[var(--elevated)] rounded-lg transition-colors cursor-pointer"
         title="Maximizar"
       >
-        <Square20Regular className="text-gray-400 w-4 h-4" />
+        <Square20Regular className="text-[var(--text-muted)] w-4 h-4" />
       </button>
       <button
         onClick={handleClose}
-        className="w-10 h-9 flex items-center justify-center hover:bg-red-600 transition-colors cursor-pointer"
+        className="w-9 h-8 flex items-center justify-center hover:bg-[var(--error)] rounded-lg transition-colors cursor-pointer group"
         title="Cerrar"
       >
-        <Dismiss20Regular className="text-gray-400 hover:text-white w-4 h-4" />
+        <Dismiss20Regular className="text-[var(--text-muted)] group-hover:text-white w-4 h-4 transition-colors" />
       </button>
     </div>
   );
