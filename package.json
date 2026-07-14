@@ -1,6 +1,6 @@
 {
   "name": "twitch-rawen",
-  "version": "2.2.0",
+  "version": "2.2.2",
   "private": true,
   "main": "electron-dist/main.js",
   "scripts": {
@@ -55,6 +55,7 @@
     "@tailwindcss/browser": "^4.3.2",
     "electron-log": "^5.4.4",
     "electron-updater": "^6.8.9",
+    "fs": "^0.0.1-security",
     "next": "16.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
