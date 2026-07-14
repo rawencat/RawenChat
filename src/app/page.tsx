@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Sidebar from "./components/sidebar/Sidebar";
 import SettingsModal from "./components/global/SettingsModal";
 import UpdateModal from "./components/global/UpdateModal";
@@ -82,6 +82,10 @@ export default function Home() {
       }
     });
   }, [chat.messages, autoScroll]);
+
+  const handleUpdateAvailable = useCallback(() => {
+  setIsUpdateModalOpen(true);
+}, []);
 
   return (
     <main
@@ -176,11 +180,11 @@ export default function Home() {
         onVolumeChange={tts.setVolume}
       />
 
-      <UpdateModal
-        isOpen={isUpdateModalOpen}
-        onClose={() => setIsUpdateModalOpen(false)}
-        onUpdateAvailable={() => setIsUpdateModalOpen(true)}
-      />
+     <UpdateModal
+  isOpen={isUpdateModalOpen}
+  onClose={() => setIsUpdateModalOpen(false)}
+  onUpdateAvailable={handleUpdateAvailable}
+/>
 
       {toastMessage && <Toast message={toastMessage} type="success" />}
     </main>

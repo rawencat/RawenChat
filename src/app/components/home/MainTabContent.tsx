@@ -28,6 +28,8 @@ export default function MainTabContent({
   setCommands,
   setToastMessage,
 }: MainTabContentProps) {
+
+  
   return (
     <>
       <div key={activeTab} className="flex-1 flex flex-col min-h-0 animate-tab-enter">

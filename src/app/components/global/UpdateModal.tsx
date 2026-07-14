@@ -1,4 +1,10 @@
-import { Dismiss20Regular, ArrowDownload20Regular, ArrowSync20Regular, Checkmark20Regular, ErrorCircle20Regular } from "@fluentui/react-icons";
+import {
+  Dismiss20Regular,
+  ArrowDownload20Regular,
+  ArrowSync20Regular,
+  Checkmark20Regular,
+  ErrorCircle20Regular,
+} from "@fluentui/react-icons";
 import { useEffect, useState } from "react";
 
 interface UpdateInfo {
@@ -24,10 +30,15 @@ interface UpdateModalProps {
   onUpdateAvailable?: () => void;
 }
 
-export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: UpdateModalProps) {
+export default function UpdateModal({
+  isOpen,
+  onClose,
+  onUpdateAvailable,
+}: UpdateModalProps) {
   const [status, setStatus] = useState<string>("idle");
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
+  const [downloadProgress, setDownloadProgress] =
+    useState<DownloadProgress | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,7 +46,7 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
 
     const unsubscribe = window.electron.onUpdateStatus((newStatus, data) => {
       setStatus(newStatus);
-      
+
       switch (newStatus) {
         case "available":
           setUpdateInfo(data as UpdateInfo);
@@ -62,7 +73,7 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
 
   const handleCheckForUpdates = async () => {
     if (!window.electron) return;
-    
+
     setErrorMessage(null);
     const result = await window.electron.checkForUpdates();
     if (!result.success && result.message) {
@@ -72,7 +83,7 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
 
   const handleDownloadUpdate = async () => {
     if (!window.electron) return;
-    
+
     setErrorMessage(null);
     const result = await window.electron.downloadUpdate();
     if (!result.success && result.message) {
@@ -82,7 +93,7 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
 
   const handleInstallUpdate = async () => {
     if (!window.electron) return;
-    
+
     const result = await window.electron.installUpdate();
     if (!result.success && result.message) {
       setErrorMessage(result.message);
@@ -123,21 +134,27 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
           {status === "idle" && (
             <div className="text-center py-6">
               <ArrowSync20Regular className="w-12 h-12 mx-auto mb-3 text-[var(--accent)]" />
-              <p className="text-[var(--text-secondary)]">Verifica si hay actualizaciones disponibles</p>
+              <p className="text-[var(--text-secondary)]">
+                Verifica si hay actualizaciones disponibles
+              </p>
             </div>
           )}
 
           {status === "checking" && (
             <div className="text-center py-6">
               <ArrowSync20Regular className="w-12 h-12 mx-auto mb-3 text-[var(--accent)] animate-spin" />
-              <p className="text-[var(--text-secondary)]">Buscando actualizaciones...</p>
+              <p className="text-[var(--text-secondary)]">
+                Buscando actualizaciones...
+              </p>
             </div>
           )}
 
           {status === "not-available" && (
             <div className="text-center py-6">
               <Checkmark20Regular className="w-12 h-12 mx-auto mb-3 text-[var(--success)]" />
-              <p className="text-[var(--text-secondary)]">Tienes la versión más reciente</p>
+              <p className="text-[var(--text-secondary)]">
+                Tienes la versión más reciente
+              </p>
             </div>
           )}
 
@@ -146,10 +163,26 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
               <div className="flex items-center gap-3 p-4 bg-[var(--elevated)] rounded-xl">
                 <ArrowDownload20Regular className="w-8 h-8 text-[var(--accent)]" />
                 <div>
-                  <p className="font-semibold text-white">Nueva versión disponible</p>
-                  <p className="text-sm text-[var(--text-muted)]">v{updateInfo.version}</p>
+                  <p className="font-semibold text-white">
+                    Nueva versión disponible
+                  </p>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    v{updateInfo.version}
+                  </p>
                 </div>
               </div>
+
+              {updateInfo.releaseNotes && (
+                <div className="p-4 bg-[var(--elevated)] rounded-xl max-h-48 overflow-y-auto">
+                  <p className="text-sm font-semibold text-white mb-2">
+                    Novedades
+                  </p>
+                  <div className="text-sm text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">
+                    {updateInfo.releaseNotes}
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleDownloadUpdate}
                 className="w-full py-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
@@ -164,17 +197,24 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[var(--text-secondary)]">Descargando...</span>
-                  <span className="text-[var(--accent)] font-mono">{Math.round(downloadProgress.percent)}%</span>
+                  <span className="text-[var(--text-secondary)]">
+                    Descargando...
+                  </span>
+                  <span className="text-[var(--accent)] font-mono">
+                    {Math.round(downloadProgress.percent)}%
+                  </span>
                 </div>
                 <div className="w-full h-2 bg-[var(--elevated)] rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-[var(--accent)] transition-all duration-300"
                     style={{ width: `${downloadProgress.percent}%` }}
                   />
                 </div>
                 <div className="flex justify-between text-xs text-[var(--text-muted)]">
-                  <span>{formatBytes(downloadProgress.transferred)} / {formatBytes(downloadProgress.total)}</span>
+                  <span>
+                    {formatBytes(downloadProgress.transferred)} /{" "}
+                    {formatBytes(downloadProgress.total)}
+                  </span>
                   <span>{formatBytes(downloadProgress.bytesPerSecond)}/s</span>
                 </div>
               </div>
@@ -186,10 +226,26 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
               <div className="flex items-center gap-3 p-4 bg-[var(--success-muted)] rounded-xl border border-[var(--success)]/30">
                 <Checkmark20Regular className="w-8 h-8 text-[var(--success)]" />
                 <div>
-                  <p className="font-semibold text-[var(--success)]">Descarga completada</p>
-                  <p className="text-sm text-[var(--text-muted)]">La actualización está lista para instalar</p>
+                  <p className="font-semibold text-[var(--success)]">
+                    Descarga completada
+                  </p>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    La actualización está lista para instalar
+                  </p>
                 </div>
               </div>
+
+              {updateInfo?.releaseNotes && (
+                <div className="p-4 bg-[var(--elevated)] rounded-xl max-h-48 overflow-y-auto">
+                  <p className="text-sm font-semibold text-white mb-2">
+                    Novedades
+                  </p>
+                  <div className="text-sm text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">
+                    {updateInfo.releaseNotes}
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleInstallUpdate}
                 className="w-full py-3 bg-[var(--success)] hover:opacity-90 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
@@ -205,7 +261,9 @@ export default function UpdateModal({ isOpen, onClose, onUpdateAvailable }: Upda
                 <ErrorCircle20Regular className="w-8 h-8 text-[var(--error)]" />
                 <div>
                   <p className="font-semibold text-[var(--error)]">Error</p>
-                  <p className="text-sm text-[var(--text-muted)]">{errorMessage || "Ocurrió un error"}</p>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    {errorMessage || "Ocurrió un error"}
+                  </p>
                 </div>
               </div>
             </div>
