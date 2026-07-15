@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logo.png" alt="RawenChat Logo" width="120" />
+<img src="public/showcase/Embed.png" alt="RawenChat" width="100%" />
 
 # 🐱 RawenChat
 
@@ -39,9 +39,6 @@ Lee el chat de tu canal en tiempo real, ejecuta comandos, reproduce sonidos, act
 
 ### Avatar Overlay
 ![Avatar](public/showcase/avatar.png)
-
-### Embed personalizado
-![Embed](public/showcase/Embed.png)
 
 </div>
 
