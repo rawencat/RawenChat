@@ -90,7 +90,6 @@ export async function speakMessage(
     try {
       stopSpeaking();
 
-      // Try Electron IPC first (serverless approach for desktop app)
       if (isElectron()) {
         const electron = getElectronAPI();
         if (electron?.speakMessage) {
@@ -101,14 +100,12 @@ export async function speakMessage(
             })
             .catch((err: Error) => {
               console.error("Electron TTS error:", err);
-              // Fallback to API
               speakViaAPI(message, language, voice, volume, resolve);
             });
           return;
         }
       }
 
-      // Fallback to API for web version
       speakViaAPI(message, language, voice, volume, resolve);
     } catch (error) {
       console.error("speakMessage error:", error);
@@ -117,9 +114,6 @@ export async function speakMessage(
   });
 }
 
-/**
- * Play audio from base64-encoded data
- */
 function playAudio(
   audioBase64: string,
   volume: number,

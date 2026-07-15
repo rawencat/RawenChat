@@ -1,79 +1,164 @@
+<div align="center">
 
-# RawenChat
+<img src="public/logo.png" alt="RawenChat Logo" width="120" />
 
-[![Download / Descargar](https://img.shields.io/badge/Download-Descargar-blue?style=for-the-badge)](https://github.com/RevenzMind/RawenChat/releases/latest) [![Twitch](https://img.shields.io/badge/Twitch-Supported-purple?style=for-the-badge&logo=twitch&logoColor=white)](https://www.twitch.tv) [![Kick](https://img.shields.io/badge/Kick-Supported-black?style=for-the-badge&logo=kick&logoColor=white)](https://kick.com)
+# 🐱 RawenChat
 
-Aplicación ligera para leer el chat de tu canal en Twitch o Kick, ejecutar comandos desde el chat y aplicar acciones (sonidos, teclas, alerts) con soporte de TTS.
+**La app definitiva para streamers de Twitch y Kick**
 
-## Resumen rápido
+[![Download](https://img.shields.io/badge/⬇_Descargar-v2.2.3-blue?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/RevenzMind/RawenChat/releases/latest)
+[![Web App](https://img.shields.io/badge/🌐_Web_App-chat.rawencat.tech-purple?style=for-the-badge)](https://chat.rawencat.tech)
+[![Twitch](https://img.shields.io/badge/Twitch-Supported-9146FF?style=for-the-badge&logo=twitch&logoColor=white)](https://www.twitch.tv)
+[![Kick](https://img.shields.io/badge/Kick-Supported-53FC18?style=for-the-badge&logo=kick&logoColor=white)](https://kick.com)
 
-- Elige plataforma (Twitch/Kick), entra tu usuario y conecta.
+---
 
-## Soporte de plataformas
+Lee el chat de tu canal en tiempo real, ejecuta comandos, reproduce sonidos, activa teclas y usa overlays personalizados para OBS.
 
-- **Twitch:** conexión mediante `tmi.js`, autenticación con OAuth y comandos en canal.
-- **Kick:** conexión vía WebSocket, lectura de chat en tiempo real y ejecución de comandos.
+**[🌐 Abrir en el navegador →](https://chat.rawencat.tech)**
 
-- Verás el chat en tiempo real.
-- Usa comandos para reproducir sonidos, activar teclas o acciones.
+</div>
 
-## Flujo (visual)
+---
 
-1. Inicio — escribe tu usuario y conecta.
+## 🐾 Showcase
 
-   ![Inicio](public/start.png)
+<div align="center">
 
-2. Chat — mensajes en vivo con TTS opcional.
+### Pantalla de inicio
+![Start](public/showcase/start.png)
 
-   ![Chat](public/chat.png)
+### Chat en vivo
+![Home Chat](public/showcase/homechat.png)
 
-3. Comandos — reproducir sonidos, alertas o pulsar teclas.
+### Editor de comandos
+![Commands](public/showcase/commands.png)
 
-   ![Comandos](public/commands.png)
-   ![Opciones](public/config.png)
+### Edición de código
+![Edit](public/showcase/edit.png)
 
-## Funcionalidades principales
+### Configuración
+![Settings](public/showcase/settings.png)
 
-- `TTS` para leer mensajes.
-- `Auto scroll` para seguir el chat.
-- Comandos personalizables (texto, sonido, tecla, timeout).
-- Timeouts por comando para evitar abusos.
+### Avatar Overlay
+![Avatar](public/showcase/avatar.png)
 
-### Ejemplos de comandos
+### Embed personalizado
+![Embed](public/showcase/Embed.png)
 
-```txt
-!hola     -> responde texto
-!sonido   -> reproduce un sonido
-!alerta   -> muestra una alerta
-!escena   -> activa una tecla / cambia escena
-```
+</div>
 
-## OBS (overlay)
+---
 
-Pulsa **OBS overlay** en la app para copiar la URL que genera, pégala en una fuente "Browser"/"Navegador" en OBS y ajusta tamaño/posición. Listo.
+## ⚡ Funcionalidades
 
-![Overlay](public/obs.png)
+| Feature | Descripción |
+|---------|-------------|
+| 🗣️ **TTS** | Lee los mensajes del chat en voz alta con Microsoft Edge TTS |
+| ⌨️ **Comandos** | Crea comandos que reproducen sonidos, activan teclas o responden texto |
+| 🎭 **Avatar Overlay** | Overlay reactivo al micrófono para tu avatar en OBS |
+| 💬 **Chat Overlay** | Overlay de chat personalizable con código React en tiempo real |
+| 🔄 **Auto Scroll** | El chat se desplaza automáticamente para seguir los mensajes |
+| ⏱️ **Rate Limiting** | Timeouts por comando y por usuario para evitar abusos |
+| 🌐 **Multiplataforma** | Twitch (tmi.js) y Kick (WebSocket) soportados |
+| 🖥️ **Electron + Web** | Funciona como app de escritorio o directamente en el navegador |
 
-## Desarrollo
+---
 
-Instala y ejecuta:
+## 🐱 Overlays para OBS
+
+### Chat Overlay
+
+1. Abre la app y conecta tu canal
+2. Haz clic en **"Copiar URL del Overlay"**
+3. En OBS, agrega una fuente **"Browser"** y pega la URL
+4. Personaliza el componente del overlay con el editor de código integrado (React + Tailwind)
+
+![Chat Overlay](public/obs.png)
+
+### Avatar Overlay
+
+1. Ve a la pestaña **Avatar** en la app
+2. Configura tu micrófono, imágenes idle/active y sensibilidad
+3. Haz clic en **"Copiar URL"** y pégala como fuente Browser en OBS
+4. Tu avatar reaccionará en tiempo real a tu voz
+
+---
+
+## 🚀 Inicio rápido
+
+### App de escritorio
+
+1. Descarga la última versión desde [Releases](https://github.com/RevenzMind/RawenChat/releases/latest)
+2. Instala y ejecuta
+3. Elige tu plataforma (Twitch/Kick), escribe tu usuario y conecta
+
+### Navegador
+
+Visita **[chat.rawencat.tech](https://chat.rawencat.tech)** y úsala directamente sin instalar nada.
+
+### Desarrollo
 
 ```bash
+git clone https://github.com/RevenzMind/RawenChat.git
+cd RawenChat
 pnpm install
 pnpm dev
 ```
 
-Abre:
+Abre `http://localhost:3000`
 
-```txt
-http://localhost:3000
+---
+
+## 🐱 Ejemplos de comandos
+
+```
+!hola      → responde con texto
+!sonido    → reproduce un sonido
+!alerta    → muestra una alerta visual
+!escena    → simula una tecla / cambia de escena en OBS
 ```
 
-## Tech
+---
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- tmi.js + WebSocket (Kick)
-- edge-tts-universal
+## 🛠️ Tech Stack
+
+<div align="center">
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-31-47848F?style=for-the-badge&logo=electron&logoColor=white)
+![tmi.js](https://img.shields.io/badge/tmi.js-Twitch-9146FF?style=for-the-badge)
+
+</div>
+
+---
+
+## 📦 Estructura del proyecto
+
+```
+RawenChat/
+├── electron/          # Electron main process (TypeScript)
+├── src/               # Next.js frontend (React 19 + Tailwind)
+│   ├── app/
+│   │   ├── page.tsx        # App principal
+│   │   ├── obs/page.tsx    # Overlay de chat para OBS
+│   │   └── avatar/page.tsx # Overlay de avatar para OBS
+│   ├── components/    # UI components
+│   ├── hooks/         # Custom hooks (TTS, Avatar, Chat)
+│   └── utils/         # Utility functions
+├── public/            # Static assets
+│   └── showcase/      # Screenshots para el README
+├── scripts/           # Release & deploy scripts
+└── server.js          # WebSocket bridge (dev mode)
+```
+
+---
+
+<div align="center">
+
+**Hecho con 🐱 por [RawenCat](https://chat.rawencat.tech)**
+
+</div>
