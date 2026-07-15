@@ -7,15 +7,12 @@
 **La app definitiva para streamers de Twitch y Kick**
 
 [![Download](https://img.shields.io/badge/⬇_Descargar-v2.2.3-blue?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/RevenzMind/RawenChat/releases/latest)
-[![Web App](https://img.shields.io/badge/🌐_Web_App-chat.rawencat.tech-purple?style=for-the-badge)](https://chat.rawencat.tech)
 [![Twitch](https://img.shields.io/badge/Twitch-Supported-9146FF?style=for-the-badge&logo=twitch&logoColor=white)](https://www.twitch.tv)
 [![Kick](https://img.shields.io/badge/Kick-Supported-53FC18?style=for-the-badge&logo=kick&logoColor=white)](https://kick.com)
 
 ---
 
 Lee el chat de tu canal en tiempo real, ejecuta comandos, reproduce sonidos, activa teclas y usa overlays personalizados para OBS.
-
-**[🌐 Abrir en el navegador →](https://chat.rawencat.tech)**
 
 </div>
 
@@ -61,7 +58,7 @@ Lee el chat de tu canal en tiempo real, ejecuta comandos, reproduce sonidos, act
 | 🔄 **Auto Scroll** | El chat se desplaza automáticamente para seguir los mensajes |
 | ⏱️ **Rate Limiting** | Timeouts por comando y por usuario para evitar abusos |
 | 🌐 **Multiplataforma** | Twitch (tmi.js) y Kick (WebSocket) soportados |
-| 🖥️ **Electron + Web** | Funciona como app de escritorio o directamente en el navegador |
+| 🖥️ **Electron** | App de escritorio multiplataforma (Windows, Mac, Linux) |
 
 ---
 
@@ -92,10 +89,6 @@ Lee el chat de tu canal en tiempo real, ejecuta comandos, reproduce sonidos, act
 1. Descarga la última versión desde [Releases](https://github.com/RevenzMind/RawenChat/releases/latest)
 2. Instala y ejecuta
 3. Elige tu plataforma (Twitch/Kick), escribe tu usuario y conecta
-
-### Navegador
-
-Visita **[chat.rawencat.tech](https://chat.rawencat.tech)** y úsala directamente sin instalar nada.
 
 ### Desarrollo
 
